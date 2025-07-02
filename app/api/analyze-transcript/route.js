@@ -1,10 +1,18 @@
 import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
 
-const openai = new OpenAI({
-  apiKey: process.env.XAI_API_KEY,
-  baseURL: 'https://api.x.ai/v1',
-})
+// Initialize OpenAI client only when needed to avoid build errors
+let openai = null
+
+function getOpenAIClient() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.XAI_API_KEY || 'dummy-key',
+      baseURL: 'https://api.x.ai/v1',
+    })
+  }
+  return openai
+}
 
 export async function POST(request) {
   try {
@@ -79,7 +87,7 @@ Provide your response in this JSON format:
 
 Remember: Be thorough, accurate, and quote specific examples from the transcript to support every score.`
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: "grok-3-latest", // Using Grok 3 latest - superior reasoning and analysis
       messages: [
         {
