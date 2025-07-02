@@ -1,0 +1,26 @@
+{
+  "name": "job-scorecard-app",
+  "version": "1.0.0",
+  "description": "A job candidate scoring application built with Next.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.0",
+    "lucide-react": "^0.263.1",
+    "next": "14.0.3",
+    "openai": "^5.8.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "eslint": "^8.54.0",
+    "eslint-config-next": "14.0.3",
+    "postcss": "^8.4.24",
+    "tailwindcss": "^3.3.2"
+  }
+}
