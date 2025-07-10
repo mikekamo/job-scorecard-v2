@@ -1,5 +1,5 @@
 {
-  "name": "job-scorecard-app",
+  "name": "hiresprint-app",
   "version": "1.0.0",
   "description": "A job candidate scoring application built with Next.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/blob": "^1.1.1",
     "dotenv": "^17.0.0",
     "lucide-react": "^0.263.1",
     "next": "14.0.3",

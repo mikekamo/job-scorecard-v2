@@ -94,7 +94,7 @@ npm start
    - Each competency should have a clear name and description
 
 ### 2. Adding Candidates
-1. Open a job's scorecard by clicking "Open Scorecard"
+1. View a job's candidates by clicking "View Candidates"
 2. Click "Add Candidate"
 3. Enter candidate name (required), email, and notes
 4. Click "Add Candidate" to save

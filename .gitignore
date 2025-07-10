@@ -34,3 +34,6 @@ Thumbs.db
 # User data (PROTECTED - your jobs, candidates, and competencies)
 data/
 *.backup.json 
+
+# Local video uploads (development only)
+public/uploads/
