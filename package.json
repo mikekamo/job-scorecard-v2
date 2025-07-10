@@ -15,7 +15,8 @@
     "next": "14.0.3",
     "openai": "^5.8.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",

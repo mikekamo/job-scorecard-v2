@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, Building2, ChevronDown, Settings, LogOut } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, Building2, ChevronDown, Settings, LogOut, ChevronRight } from 'lucide-react'
 
 // Question bank templates
 const QUESTION_BANK = [
@@ -24,6 +24,7 @@ const QUESTION_BANK = [
 ]
 
 export default function JobForm({ job, company, onSave, onCancel }) {
+  const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
     title: job?.title || '',
     description: job?.description || '',
@@ -35,13 +36,14 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       { id: '5', name: 'Cultural Fit', description: 'Aligns with company values and culture', weight: 1 }
     ],
     interviewQuestions: job?.interviewQuestions || [
-      { id: '1', question: 'Tell me about yourself and your professional background', timeLimit: 300 },
-      { id: '2', question: 'Why are you interested in this role?', timeLimit: 300 },
-      { id: '3', question: 'Describe a challenging project you worked on and how you handled it', timeLimit: 300 }
+      { id: 'q1', question: 'Tell me about your technical experience and the technologies you work with most frequently.', timeLimit: 240, competencyId: '1' },
+      { id: 'q2', question: 'Describe a time when you had to explain a complex concept to someone with less technical background.', timeLimit: 180, competencyId: '2' },
+      { id: 'q3', question: 'Walk me through how you approach solving a challenging problem you\'ve never encountered before.', timeLimit: 240, competencyId: '3' },
+      { id: 'q4', question: 'Tell me about a successful team project you worked on and your specific role in its success.', timeLimit: 180, competencyId: '4' },
+      { id: 'q5', question: 'What type of work environment and company culture do you thrive in, and why?', timeLimit: 180, competencyId: '5' }
     ]
   })
   
-  const [activeTab, setActiveTab] = useState('competencies')
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [isGeneratingCompetencies, setIsGeneratingCompetencies] = useState(false)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
@@ -49,6 +51,9 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [aiPrompt, setAiPrompt] = useState('')
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+
+  // If editing existing job, show all steps
+  const isEditingJob = Boolean(job)
 
   const openAIModal = () => {
     if (!formData.title.trim()) {
@@ -128,6 +133,11 @@ export default function JobForm({ job, company, onSave, onCancel }) {
         ...prev,
         competencies: data.competencies
       }))
+      
+      // Auto-generate questions after competencies are generated
+      setTimeout(() => {
+        generateQuestions()
+      }, 500)
     } catch (error) {
       console.error('Error generating competencies:', error)
       alert('Failed to generate competencies. Please try again.')
@@ -158,7 +168,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
           jobTitle: formData.title,
           jobDescription: formData.description,
           competencies: formData.competencies,
-          company: company
+          company: company,
+          onePerCompetency: true // Ensure exactly one question per competency
         })
       })
 
@@ -167,9 +178,16 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       }
 
       const data = await response.json()
+      
+      // Map questions to competencies with proper competencyId linking
+      const questionsWithCompetencyIds = data.questions.map((question, index) => ({
+        ...question,
+        competencyId: formData.competencies[index]?.id || (index + 1).toString()
+      }))
+      
       setFormData(prev => ({
         ...prev,
-        interviewQuestions: data.questions
+        interviewQuestions: questionsWithCompetencyIds
       }))
     } catch (error) {
       console.error('Error generating questions:', error)
@@ -177,6 +195,29 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     } finally {
       setIsGeneratingQuestions(false)
     }
+  }
+
+  const handleNextStep = async () => {
+    if (currentStep === 1) {
+      // Validate step 1 before proceeding
+      if (!formData.title.trim()) {
+        alert('Please enter a job title first')
+        return
+      }
+      
+      if (formData.description.length < 100) {
+        alert(`Job description needs at least 100 characters to generate meaningful competencies. Current: ${formData.description.length} characters.`)
+        return
+      }
+      
+      // Generate competencies and questions automatically
+      setCurrentStep(2)
+      await generateCompetencies()
+    }
+  }
+
+  const handleBackStep = () => {
+    setCurrentStep(1)
   }
 
   const handleInputChange = (field, value) => {
@@ -202,16 +243,27 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       description: '',
       weight: 1
     }
+    
+    // Create a corresponding question for the new competency
+    const newQuestion = {
+      id: 'q' + Date.now().toString(),
+      question: '',
+      timeLimit: 180,
+      competencyId: newCompetency.id
+    }
+    
     setFormData(prev => ({
       ...prev,
-      competencies: [...prev.competencies, newCompetency]
+      competencies: [...prev.competencies, newCompetency],
+      interviewQuestions: [...prev.interviewQuestions, newQuestion]
     }))
   }
 
   const removeCompetency = (id) => {
     setFormData(prev => ({
       ...prev,
-      competencies: prev.competencies.filter(comp => comp.id !== id)
+      competencies: prev.competencies.filter(comp => comp.id !== id),
+      interviewQuestions: prev.interviewQuestions.filter(q => q.competencyId !== id)
     }))
   }
 
@@ -224,89 +276,20 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }))
   }
 
-  const addQuestion = () => {
-    const newQuestion = {
-      id: Date.now().toString(),
-      question: '',
-      timeLimit: 300 // Default 5 minutes
-    }
-    setFormData(prev => ({
-      ...prev,
-      interviewQuestions: [...prev.interviewQuestions, newQuestion]
-    }))
-  }
-
-  const removeQuestion = (id) => {
-    setFormData(prev => ({
-      ...prev,
-      interviewQuestions: prev.interviewQuestions.filter(q => q.id !== id)
-    }))
-  }
-
   const addQuestionFromBank = (templateQuestion) => {
     const newQuestion = {
       id: Date.now().toString(),
       question: templateQuestion.question,
-      timeLimit: templateQuestion.timeLimit
+      timeLimit: templateQuestion.timeLimit,
+      competencyId: '' // Will need to be assigned
     }
+    
     setFormData(prev => ({
       ...prev,
       interviewQuestions: [...prev.interviewQuestions, newQuestion]
     }))
-  }
-
-  // Drag and drop functions for reordering questions
-  const handleDragStart = (e, index) => {
-    e.dataTransfer.setData('text/plain', index)
     
-    // Create a custom drag image that's not transparent
-    const draggedElement = e.currentTarget
-    const clone = draggedElement.cloneNode(true)
-    
-    // Make the clone fully opaque and position it off-screen
-    clone.style.opacity = '1'
-    clone.style.position = 'absolute'
-    clone.style.top = '-1000px'
-    clone.style.left = '-1000px'
-    clone.style.pointerEvents = 'none'
-    clone.style.zIndex = '9999'
-    
-    // Add clone to body temporarily
-    document.body.appendChild(clone)
-    
-    // Use the clone as the drag image
-    e.dataTransfer.setDragImage(clone, e.offsetX, e.offsetY)
-    
-    // Remove the clone after a short delay
-    setTimeout(() => {
-      if (document.body.contains(clone)) {
-        document.body.removeChild(clone)
-      }
-    }, 0)
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault()
-    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'))
-    
-    if (dragIndex === dropIndex) return
-    
-    const newQuestions = [...formData.interviewQuestions]
-    const draggedQuestion = newQuestions[dragIndex]
-    
-    // Remove the dragged question
-    newQuestions.splice(dragIndex, 1)
-    // Insert it at the new position
-    newQuestions.splice(dropIndex, 0, draggedQuestion)
-    
-    setFormData(prev => ({
-      ...prev,
-      interviewQuestions: newQuestions
-    }))
+    setShowQuestionBankModal(false)
   }
 
   const handleSubmit = (e) => {
@@ -326,6 +309,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     window.location.href = '/login'
   }
 
+  const shouldShowCompetencies = currentStep >= 2 || isEditingJob
+
   return (
     <div className="min-h-screen bg-white">
       <div className="px-6 py-4 border-b border-gray-200">
@@ -340,6 +325,11 @@ export default function JobForm({ job, company, onSave, onCancel }) {
             <h2 className="text-lg font-semibold text-gray-900">
               {job ? 'Edit Job' : 'Create New Job'}
             </h2>
+            {!isEditingJob && (
+              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                Step {currentStep} of 2
+              </span>
+            )}
           </div>
           
           {/* Company Dropdown */}
@@ -482,80 +472,85 @@ export default function JobForm({ job, company, onSave, onCancel }) {
               )}
             </div>
 
-            {/* Tabbed Section for Competencies and Interview Questions */}
-            <div>
-              {/* Tab Navigation */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="flex space-x-8">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('competencies')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'competencies'
-                        ? 'border-green-500 text-green-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📊 Competencies ({formData.competencies.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('interview')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'interview'
-                        ? 'border-purple-500 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    🎥 Video Interview ({formData.interviewQuestions.length})
-                  </button>
-                </nav>
+            {/* Next Step Button */}
+            {!isEditingJob && currentStep === 1 && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={!formData.title.trim() || formData.description.length < 100}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                    !formData.title.trim() || formData.description.length < 100
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  <span>Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
               </div>
+            )}
 
-              {/* Tab Content */}
-              {activeTab === 'competencies' && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Competencies</h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={generateCompetencies}
-                        disabled={!formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies}
-                        className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
-                          !formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                        }`}
-                        title={
-                          !formData.title.trim() 
-                            ? 'Enter a job title first' 
-                            : formData.description.length < 100
-                            ? `Job description needs at least 100 characters (current: ${formData.description.length})`
-                            : 'Generate competencies with AI'
-                        }
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        {isGeneratingCompetencies ? 'Generating...' : 'Generate with AI'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={addCompetency}
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Competency
-                      </button>
+            {/* Integrated Competencies & Interview Questions */}
+            {shouldShowCompetencies && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Competencies & Interview Questions</h3>
+                  {isGeneratingCompetencies && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Generating AI content...</span>
                     </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={generateCompetencies}
+                      disabled={!formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies}
+                      className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
+                        !formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      }`}
+                      title={
+                        !formData.title.trim() 
+                          ? 'Enter a job title first' 
+                          : formData.description.length < 100
+                          ? `Job description needs at least 100 characters (current: ${formData.description.length})`
+                          : 'Generate competencies with AI'
+                      }
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {isGeneratingCompetencies ? 'Generating...' : 'Generate with AI'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addCompetency}
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Competency
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-4">
-                    {formData.competencies.map((competency, index) => (
-                      <div key={competency.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <span className="text-sm font-medium text-gray-500">
-                            Competency {index + 1}
-                          </span>
+                <div className="space-y-6">
+                  {formData.competencies.map((competency, index) => {
+                    // Find the associated interview question for this competency
+                    const associatedQuestion = formData.interviewQuestions.find(q => q.competencyId === competency.id) || 
+                                             formData.interviewQuestions[index] // Fallback to index-based matching
+                    
+                    return (
+                      <div key={competency.id} className="border border-gray-200 rounded-lg p-6 bg-white">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-white bg-green-600 w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
+                              {index + 1}
+                            </span>
+                            <span className="text-sm font-medium text-gray-500">
+                              Competency {index + 1}
+                            </span>
+                          </div>
                           {formData.competencies.length > 1 && (
                             <button
                               type="button"
@@ -567,7 +562,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Competency Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Name *
@@ -595,159 +591,83 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                             />
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {activeTab === 'interview' && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Video Interview Questions</h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={generateQuestions}
-                        disabled={!formData.title.trim() || formData.competencies.length === 0 || isGeneratingQuestions}
-                        className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
-                          !formData.title.trim() || formData.competencies.length === 0 || isGeneratingQuestions
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                        }`}
-                        title={
-                          !formData.title.trim() 
-                            ? 'Enter a job title first' 
-                            : formData.competencies.length === 0
-                            ? 'Add or generate competencies first'
-                            : 'Generate questions with AI'
-                        }
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        {isGeneratingQuestions ? 'Generating...' : 'Generate with AI'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowQuestionBankModal(true)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Question Bank
-                      </button>
-                      <button
-                        type="button"
-                        onClick={addQuestion}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Question
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-4">
-                    🎥 These questions will be sent to candidates for video responses. Each candidate gets a unique link.
-                    <br />
-                    💡 <strong>AI Generation:</strong> Questions are designed to elicit responses that can be scored against your competencies for accurate evaluation.
-                  </p>
-
-                  <div className="space-y-3">
-                    {formData.interviewQuestions.map((question, index) => (
-                      <div 
-                        key={question.id} 
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, index)}
-                        className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md hover:border-purple-300 transition-all cursor-move group"
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* Question Number */}
-                          <div className="flex-shrink-0 mt-1">
-                            <span className="text-sm font-semibold text-white bg-purple-600 w-7 h-7 rounded-full flex items-center justify-center shadow-sm">
-                              {index + 1}
-                            </span>
-                          </div>
-
-                          {/* Question Content */}
-                          <div className="flex-1 min-w-0">
-                            <textarea
-                              required
-                              rows={2}
-                              value={question.question}
-                              onChange={(e) => handleQuestionChange(question.id, 'question', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                              placeholder="What question should candidates answer?"
-                              onInput={(e) => {
-                                e.target.style.height = 'auto';
-                                e.target.style.height = Math.max(48, e.target.scrollHeight) + 'px';
-                              }}
-                            />
-                          </div>
-
-                          {/* Time Limit */}
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm hover:border-purple-300 transition-colors focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-100">
-                              <input
-                                type="number"
-                                min="0"
-                                max="10"
-                                value={Math.floor(question.timeLimit / 60)}
-                                onChange={(e) => {
-                                  const minutes = parseInt(e.target.value) || 0;
-                                  const seconds = question.timeLimit % 60;
-                                  const totalSeconds = minutes * 60 + seconds;
-                                  handleQuestionChange(question.id, 'timeLimit', Math.max(30, totalSeconds));
-                                }}
-                                className="w-8 border-0 bg-transparent text-sm text-center focus:outline-none font-medium text-gray-700"
-                                title="Minutes"
-                              />
-                              <span className="text-gray-400 text-sm font-medium select-none">:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="59"
-                                value={String(question.timeLimit % 60).padStart(2, '0')}
-                                onChange={(e) => {
-                                  const seconds = parseInt(e.target.value) || 0;
-                                  const minutes = Math.floor(question.timeLimit / 60);
-                                  const totalSeconds = minutes * 60 + seconds;
-                                  handleQuestionChange(question.id, 'timeLimit', Math.max(30, totalSeconds));
-                                }}
-                                className="w-8 border-0 bg-transparent text-sm text-center focus:outline-none font-medium text-gray-700"
-                                title="Seconds"
-                              />
-                              <span className="text-xs text-gray-500 ml-1 select-none">min</span>
+                        {/* Associated Interview Question */}
+                        {associatedQuestion && (
+                          <div className="border-t border-gray-100 pt-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 mt-1">
+                                <span className="text-sm font-semibold text-white bg-purple-600 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                  🎥
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Interview Question
+                                </label>
+                                <textarea
+                                  required
+                                  rows={3}
+                                  value={associatedQuestion.question}
+                                  onChange={(e) => handleQuestionChange(associatedQuestion.id, 'question', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+                                  placeholder="What question should candidates answer for this competency?"
+                                />
+                              </div>
+                              <div className="flex-shrink-0 self-center">
+                                <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm">
+                                  <input
+                                    type="text"
+                                    value={associatedQuestion.timeLimit === 0 ? '' : Math.floor(associatedQuestion.timeLimit / 60)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      // Allow typing anything, including empty
+                                      if (value === '' || /^\d+$/.test(value)) {
+                                        if (value === '') {
+                                          // Allow empty display by setting to a temporary empty state
+                                          handleQuestionChange(associatedQuestion.id, 'timeLimit', 0);
+                                        } else {
+                                          const minutes = parseInt(value);
+                                          if (minutes > 0) {
+                                            const totalSeconds = minutes * 60;
+                                            handleQuestionChange(associatedQuestion.id, 'timeLimit', totalSeconds);
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      const value = e.target.value;
+                                      const minutes = parseInt(value);
+                                      // Enforce limits when user finishes editing
+                                      if (value === '' || isNaN(minutes) || minutes < 1) {
+                                        handleQuestionChange(associatedQuestion.id, 'timeLimit', 180); // Default to 3 minutes
+                                      } else if (minutes > 10) {
+                                        handleQuestionChange(associatedQuestion.id, 'timeLimit', 600); // Cap at 10 minutes
+                                      }
+                                    }}
+                                    placeholder="3"
+                                    className="w-8 border-0 bg-transparent text-sm text-center focus:outline-none font-medium text-gray-700"
+                                    title="Minutes"
+                                  />
+                                  <span className="text-gray-500 text-sm font-medium">minutes</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-
-                          {/* Delete Button */}
-                          {formData.interviewQuestions.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeQuestion(question.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 mt-1"
-                              title="Delete question"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}
           <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-            {/* Left side - Add buttons based on active tab */}
-            <div>
-              {activeTab === 'competencies' && (
+            {/* Left side - Add Competency (only show if competencies are visible) */}
+            {shouldShowCompetencies && (
+              <div>
                 <button
                   type="button"
                   onClick={addCompetency}
@@ -756,28 +676,33 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                   <Plus className="h-4 w-4" />
                   Add Competency
                 </button>
-              )}
-              {activeTab === 'interview' && (
+              </div>
+            )}
+            
+            {/* Right side - Navigation & Save buttons */}
+            <div className="flex items-center gap-3">
+              {/* Back button (show on step 2 for new jobs) */}
+              {!isEditingJob && currentStep === 2 && (
                 <button
                   type="button"
-                  onClick={addQuestion}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+                  onClick={handleBackStep}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md flex items-center gap-2 transition-colors"
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Question
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
                 </button>
               )}
-            </div>
-            
-            {/* Right side - Save */}
-            <div>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center gap-2 transition-colors"
-              >
-                <Save className="h-4 w-4" />
-                {job ? 'Update Job' : 'Create Job'}
-              </button>
+              
+              {/* Save button (only show if we're on step 2 or editing) */}
+              {shouldShowCompetencies && (
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center gap-2 transition-colors"
+                >
+                  <Save className="h-4 w-4" />
+                  {job ? 'Update Job' : 'Create Job'}
+                </button>
+              )}
             </div>
           </div>
         </form>

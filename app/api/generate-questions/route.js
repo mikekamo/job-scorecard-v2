@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    const { jobTitle, jobDescription, competencies, company } = await request.json()
+    const { jobTitle, jobDescription, competencies, company, onePerCompetency } = await request.json()
 
     if (!jobTitle || !competencies || competencies.length === 0) {
       return NextResponse.json(
@@ -20,7 +20,71 @@ export async function POST(request) {
 
     const competencyList = competencies.map(comp => `- ${comp.name}: ${comp.description}`).join('\n')
 
-    const prompt = `Based on the following job information, create interview questions that will comprehensively evaluate candidates across ALL specified competencies.
+    let prompt
+    
+    if (onePerCompetency) {
+      // Generate exactly one question per competency
+      prompt = `Based on the following job information, create EXACTLY ${competencies.length} interview questions - ONE question for EACH competency listed below.
+
+Job Title: "${jobTitle}"
+${company?.name ? `Company: ${company.name}` : ''}
+${company?.website ? `Company website: ${company.website}` : ''}
+${company?.description ? `Company description: ${company.description}` : ''}
+${jobDescription ? `Job Description:\n${jobDescription}` : ''}
+
+COMPETENCIES TO EVALUATE (CREATE ONE QUESTION FOR EACH):
+${competencyList}
+
+CRITICAL REQUIREMENTS:
+- Generate EXACTLY ${competencies.length} questions - one for each competency
+- Questions will be ordered to match the competency order above
+- These are VIDEO INTERVIEW questions (candidates will record video responses)
+- Questions will be analyzed by AI later to score candidates on a 1-5 scale for each competency
+- Each question should directly target the specific competency it's meant to evaluate
+- Questions should encourage candidates to provide specific examples and detailed responses
+- Avoid yes/no questions - focus on experience-revealing questions
+- Questions should be answerable within 2-5 minutes each
+
+QUESTION STRATEGY:
+Create questions that directly assess each competency through experience and examples:
+
+1. **EXPERIENCE-BASED QUESTIONS (Primary focus):**
+   - "Tell me about your experience with [competency area]..."
+   - "Can you walk me through a project where you used [specific skill]?"
+   - "Describe your background in [competency] and how you've applied it in previous roles"
+
+2. **BEHAVIORAL/SITUATIONAL QUESTIONS (Secondary focus):**
+   - "Tell me about a time when you had to use [competency] to solve a challenging problem..."
+   - "How would you approach a situation requiring [competency]..."
+
+For each question, provide:
+1. A clear, well-structured question that directly evaluates the specific competency
+2. An appropriate time limit in seconds (180-300 seconds for experience questions, 120-240 for scenarios)
+
+Generate questions that:
+- Directly target each specific competency
+- Reveal the candidate's actual experience level in that competency area
+- Allow candidates to showcase their relevant work history
+- Include specific examples from previous roles
+- Are professional and relevant for video interviews
+- Provide rich data for 1-5 scoring on the specific competency
+
+Return ONLY a JSON array in this exact format (maintain the same order as the competencies):
+[
+  {
+    "question": "Tell me about your experience with [first competency]. Can you walk me through a specific project or situation where you applied this skill?",
+    "timeLimit": 240
+  },
+  {
+    "question": "Describe a time when you had to use [second competency] to solve a problem. What was your approach and what was the outcome?",
+    "timeLimit": 180
+  }
+]
+
+Do not include any other text, explanations, or formatting - just the JSON array.`
+    } else {
+      // Original prompt for multiple questions covering all competencies
+      prompt = `Based on the following job information, create interview questions that will comprehensively evaluate candidates across ALL specified competencies.
 
 Job Title: "${jobTitle}"
 ${company?.name ? `Company: ${company.name}` : ''}
@@ -98,6 +162,7 @@ Return ONLY a JSON array in this exact format:
 ]
 
 Do not include any other text, explanations, or formatting - just the JSON array.`
+    }
 
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -132,17 +197,19 @@ Do not include any other text, explanations, or formatting - just the JSON array
         timeLimit: q.timeLimit
       }))
       
-      // Add standard final question that candidates can choose to skip
-      const finalQuestion = {
-        id: Date.now().toString() + '_final',
-        question: 'Is there anything else you would like to add that you feel would be relevant to this position?',
-        timeLimit: 180,
-        isOptional: true
+      // Add standard final question that candidates can choose to skip (except for onePerCompetency)
+      if (!onePerCompetency) {
+        const finalQuestion = {
+          id: Date.now().toString() + '_final',
+          question: 'Is there anything else you would like to add that you feel would be relevant to this position?',
+          timeLimit: 180,
+          isOptional: true
+        }
+        
+        questions.push(finalQuestion)
       }
       
-      questions.push(finalQuestion)
-      
-      console.log(`✅ Generated ${questions.length} interview questions (including optional final question)`)
+              console.log(`✅ Generated ${questions.length} interview questions${onePerCompetency ? ' (one per competency)' : ' (including optional final question)'}`)
       
       return NextResponse.json({ questions })
       

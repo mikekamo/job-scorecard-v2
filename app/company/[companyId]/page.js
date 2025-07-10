@@ -274,16 +274,6 @@ export default function CompanyJobsPage() {
                     <Plus size={16} />
                     New Job
                   </button>
-                  <button
-                    onClick={() => {
-                      document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-                      window.location.reload()
-                    }}
-                    className="text-gray-600 hover:text-gray-800 px-3 py-2 text-sm transition-colors"
-                    title="Logout"
-                  >
-                    🚪 Logout
-                  </button>
                 </div>
               </div>
             </div>
