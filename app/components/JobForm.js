@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, Building2, ChevronDown, Settings, LogOut, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight } from 'lucide-react'
 
 // Question bank templates
 const QUESTION_BANK = [
@@ -51,7 +51,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showAIModal, setShowAIModal] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
-  const [showDropdown, setShowDropdown] = useState(false)
+
 
   // If editing existing job, show all steps
   const isEditingJob = Boolean(job)
@@ -354,10 +354,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth-token')
-    window.location.href = '/login'
-  }
+
 
   const shouldShowCompetencies = currentStep >= 2 || isEditingJob
 
@@ -382,77 +379,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
             )}
           </div>
           
-          {/* Company Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building2 className="h-3 w-3 text-blue-600" />
-                </div>
-                <span className="font-medium text-gray-900">{company?.name || 'No Company'}</span>
-              </div>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </button>
 
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <div className="py-2">
-                  {/* Current Company Header */}
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Building2 className="h-3 w-3 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{company?.name || 'No Company'}</p>
-                        <p className="text-xs text-gray-500">Current company</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <button
-                      onClick={() => {
-                        setShowDropdown(false)
-                        // Navigate to add company or open modal
-                        window.location.href = '/'
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-900">Add Company</span>
-                    </button>
-                    <button
-                      onClick={() => setShowDropdown(false)}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
-                    >
-                      <Settings className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-900">Settings</span>
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
-                    >
-                      <LogOut className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-900">Logout</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Click outside to close dropdown */}
-            {showDropdown && (
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowDropdown(false)}
-              />
-            )}
-          </div>
         </div>
       </div>
       
@@ -472,32 +399,18 @@ export default function JobForm({ job, company, onSave, onCancel }) {
           )}
           <div className="space-y-6">
             {/* Basic Job Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Senior Software Engineer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company
-                </label>
-                <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
-                  {company?.name || 'No company selected'}
-                </div>
-                {company?.website && (
-                  <p className="text-sm text-gray-500 mt-1">{company.website}</p>
-                )}
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Job Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Senior Software Engineer"
+              />
             </div>
 
             <div>
