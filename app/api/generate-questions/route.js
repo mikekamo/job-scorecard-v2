@@ -24,7 +24,7 @@ export async function POST(request) {
     
     if (onePerCompetency) {
       // Generate exactly one question per competency
-      prompt = `Based on the following job information, create EXACTLY ${competencies.length} interview questions - ONE question for EACH competency listed below.
+      prompt = `You are an expert behavioral interviewer who creates probing questions that reveal authentic competency levels WITHOUT being leading or giving away what you're looking for.
 
 Job Title: "${jobTitle}"
 ${company?.name ? `Company: ${company.name}` : ''}
@@ -40,43 +40,103 @@ CRITICAL REQUIREMENTS:
 - Questions will be ordered to match the competency order above
 - These are VIDEO INTERVIEW questions (candidates will record video responses)
 - Questions will be analyzed by AI later to score candidates on a 1-5 scale for each competency
-- Each question should directly target the specific competency it's meant to evaluate
-- Questions should encourage candidates to provide specific examples and detailed responses
-- Avoid yes/no questions - focus on experience-revealing questions
-- Questions should be answerable within 2-5 minutes each
+- Each question MUST directly and specifically target the competency it's meant to evaluate
+- Questions must be RELEVANT to the actual competency name and description provided
+- Use PROBING techniques that get candidates to reveal their true experience level naturally
+- FOCUS ON COMPREHENSIVE EXPERIENCE: Ask about their overall background, not single incidents
+- Goal is to assess BREADTH and DEPTH of experience, not just one example
 
-QUESTION STRATEGY:
-Create questions that directly assess each competency through experience and examples:
+QUESTION DESIGN PRINCIPLES:
 
-1. **EXPERIENCE-BASED QUESTIONS (Primary focus):**
-   - "Tell me about your experience with [competency area]..."
-   - "Can you walk me through a project where you used [specific skill]?"
-   - "Describe your background in [competency] and how you've applied it in previous roles"
+1. **BE SPECIFIC TO THE COMPETENCY:**
+   - For "Technical Skills" → Ask about their technical experience, projects, tools
+   - For "Communication" → Ask about explaining, presenting, or discussing complex topics
+   - For "Problem Solving" → Ask about analyzing, troubleshooting, or working through challenges  
+   - For "Leadership" → Ask about guiding others, making decisions, or taking initiative
+   - For "Organizational Skills" → Ask about managing time, priorities, systems, or processes
+   - For "Team Collaboration" → Ask about working with others, contributing to group success
 
-2. **BEHAVIORAL/SITUATIONAL QUESTIONS (Secondary focus):**
-   - "Tell me about a time when you had to use [competency] to solve a challenging problem..."
-   - "How would you approach a situation requiring [competency]..."
+2. **USE PROBING TECHNIQUES (DON'T GIVE AWAY THE ANSWER):**
+   ✅ GOOD: "Walk me through your experience with managing projects"
+   ❌ BAD: "Tell me about a time you used your project management skills"
+   
+   ✅ GOOD: "What's your background with handling multiple priorities?"
+   ❌ BAD: "How do you use your organizational skills when managing deadlines?"
+   
+   ✅ GOOD: "Describe your experience troubleshooting complex issues"
+   ❌ BAD: "Tell me about a time when you had to use your problem-solving abilities"
+
+3. **QUESTION STARTERS THAT WORK (PRIORITIZE EXPERIENCE-BASED):**
+   - "What's your experience with..." (assesses breadth and depth - PREFERRED)
+   - "Walk me through your background in..." (gets comprehensive overview - PREFERRED)
+   - "Describe your experience handling..." (reveals full capability range - PREFERRED)
+   - "How do you typically approach..." (reveals methods and experience)
+   - "Tell me about your work with..." (gets professional background)
+   
+   AVOID these narrow starters:
+   - "Tell me about a time..." (too limiting to one example)
+   - "Describe a situation where..." (too specific)
+
+4. **AVOID THESE MISTAKES:**
+   - Don't mention the competency name in the question
+   - Don't use leading phrases like "using your [skill]"
+   - Don't give hints about what good answers look like
+   - Don't ask yes/no questions
+   - Don't make questions too narrow or specific
+
+EXAMPLES OF GOOD QUESTIONS BY COMPETENCY TYPE:
+
+**Technical Skills:**
+- "What's your experience with [specific technology/tools mentioned in job]?"
+- "Walk me through your background in software development and the types of projects you've worked on"
+
+**Communication:**
+- "Describe your experience presenting or explaining technical concepts to different audiences"
+- "What's your background with written and verbal communication in professional settings?"
+
+**Problem Solving:**
+- "Walk me through your approach to troubleshooting complex issues you encounter in your work"
+- "What's your experience with analyzing and solving challenging problems?"
+
+**Leadership:**
+- "Describe your experience leading projects or influencing outcomes without formal authority"
+- "What's your background with guiding teams or mentoring others?"
+
+**Organizational Skills:**
+- "Walk me through how you manage competing priorities and deadlines in your work"
+- "Describe your experience with coordinating multiple projects or tasks simultaneously"
+
+**Team Collaboration:**
+- "What's your experience working in collaborative team environments?"
+- "Describe your approach to contributing to team success across different types of projects"
+
+**Travel/Logistics (like the user's example):**
+- "What's your experience with handling travel logistics and arrangements?"
+- "Walk me through your background with coordinating transportation and accommodations"
 
 For each question, provide:
-1. A clear, well-structured question that directly evaluates the specific competency
-2. An appropriate time limit in seconds (180-300 seconds for experience questions, 120-240 for scenarios)
+1. A clear, probing question that will naturally reveal the competency level
+2. An appropriate time limit in seconds (180-300 seconds)
+3. Make sure the question directly relates to the specific competency name and description provided
 
 Generate questions that:
-- Directly target each specific competency
-- Reveal the candidate's actual experience level in that competency area
-- Allow candidates to showcase their relevant work history
-- Include specific examples from previous roles
-- Are professional and relevant for video interviews
-- Provide rich data for 1-5 scoring on the specific competency
+- Are directly relevant to each specific competency
+- Focus on OVERALL EXPERIENCE rather than single incidents
+- Allow candidates to showcase their full range of capabilities
+- Use natural, conversational language that doesn't telegraph what you're looking for
+- Encourage comprehensive responses about their background and approach
+- Will reveal authentic competency levels across their experience
+- Are professional and appropriate for video interviews
+- Give candidates room to discuss multiple examples and demonstrate expertise depth
 
 Return ONLY a JSON array in this exact format (maintain the same order as the competencies):
 [
   {
-    "question": "Tell me about your experience with [first competency]. Can you walk me through a specific project or situation where you applied this skill?",
+    "question": "What's your experience with project management and the types of projects you've worked on?",
     "timeLimit": 240
   },
   {
-    "question": "Describe a time when you had to use [second competency] to solve a problem. What was your approach and what was the outcome?",
+    "question": "Walk me through your background with coordinating multiple tasks and managing logistics",
     "timeLimit": 180
   }
 ]
@@ -165,11 +225,11 @@ Do not include any other text, explanations, or formatting - just the JSON array
     }
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert HR specialist who creates behavioral interview questions designed for video interviews and competency-based scoring. You MUST ensure every single competency is addressed by at least one question. You always respond with valid JSON arrays only.'
+          content: 'You are an expert behavioral interviewer who creates probing, relevant questions that reveal authentic competency levels without being leading. You specialize in crafting questions that get candidates to naturally demonstrate their skills through storytelling. You MUST ensure every question directly relates to its specific competency. You always respond with valid JSON arrays only.'
         },
         {
           role: 'user',
