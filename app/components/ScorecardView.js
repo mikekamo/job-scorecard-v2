@@ -700,7 +700,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
                     value={newCandidate.transcript}
                     onChange={(e) => setNewCandidate(prev => ({ ...prev, transcript: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    placeholder="Paste the interview transcript here... (Grok 3 can handle very long transcripts)"
+                    placeholder="Paste the interview transcript here... (AI can generate a score based on this transcript)"
                   />
                 </div>
               </div>
@@ -791,7 +791,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
                     value={editingCandidate.transcript || ''}
                     onChange={(e) => setEditingCandidate(prev => ({ ...prev, transcript: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    placeholder="Paste the interview transcript here... (Grok 3 can handle very long transcripts)"
+                    placeholder="Paste the interview transcript here... (AI can generate a score based on this transcript)"
                   />
                 </div>
               </div>

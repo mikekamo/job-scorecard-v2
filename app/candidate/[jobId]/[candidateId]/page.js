@@ -18,8 +18,11 @@ export default function CandidateDetailPage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [showExplanationModal, setShowExplanationModal] = useState(null)
   const [showConfirmModal, setShowConfirmModal] = useState(null)
+  const [showNoContentModal, setShowNoContentModal] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [newInterviewContent, setNewInterviewContent] = useState('')
   const [newInterviewType, setNewInterviewType] = useState('text')
+  const [tempTranscript, setTempTranscript] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
@@ -283,7 +286,8 @@ export default function CandidateDetailPage() {
     const isTextInterview = currentInterview.content && currentInterview.content.trim()
     
     if (!isVideoInterview && !isTextInterview) {
-      alert('Please add interview content or ensure video responses are available')
+      setShowNoContentModal(true)
+      setLinkCopied(false) // Reset link copied state
       return
     }
     
@@ -749,6 +753,23 @@ export default function CandidateDetailPage() {
           </div>
         </div>
 
+        {/* Candidate Notes */}
+        {candidate.notes && (
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <MessageSquare size={20} className="text-blue-600" />
+                Notes
+              </h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="text-sm text-blue-800 leading-relaxed">
+                  {candidate.notes}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Interview Content */}
         {currentInterview && (
           <div className="bg-white rounded-lg shadow-sm">
@@ -1133,6 +1154,166 @@ export default function CandidateDetailPage() {
                 <div className="text-sm text-gray-500 pt-4 border-t">
                   Source: {currentInterview?.title || 'Unknown'}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Content Modal */}
+      {showNoContentModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowNoContentModal(false)
+              setTempTranscript('')
+              setLinkCopied(false)
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+               onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Transcript or Video Interview Required</h2>
+                <button
+                  onClick={() => {
+                    setShowNoContentModal(false)
+                    setTempTranscript('')
+                    setLinkCopied(false)
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-700 leading-relaxed mb-4">
+                  AI analysis requires either a transcript or video interview to proceed. Choose one of the options below:
+                </p>
+                
+                <div className="space-y-4">
+                  {/* Option 1: Paste Transcript */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <MessageSquare size={18} className="text-blue-600" />
+                      Option 1: Paste Transcript
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      If you have an interview transcript, paste it below and run AI analysis.
+                    </p>
+                    <textarea
+                      value={tempTranscript}
+                      onChange={(e) => setTempTranscript(e.target.value)}
+                      placeholder="Paste your interview transcript here..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md h-32 resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (tempTranscript.trim()) {
+                          // Update the current interview with the transcript
+                          const currentInterview = getCurrentInterview()
+                          if (currentInterview) {
+                            const updatedInterview = {
+                              ...currentInterview,
+                              content: tempTranscript
+                            }
+                            const updatedCandidate = {
+                              ...candidate,
+                              interviews: candidate.interviews.map((interview, index) => 
+                                index === selectedInterviewIndex ? updatedInterview : interview
+                              )
+                            }
+                            updateCandidateData(updatedCandidate)
+                          }
+                          setTempTranscript('')
+                          setShowNoContentModal(false)
+                          // Automatically trigger AI analysis
+                          setTimeout(() => {
+                            runAIAnalysis()
+                          }, 100)
+                        }
+                      }}
+                      disabled={!tempTranscript.trim()}
+                      className={`mt-2 px-4 py-2 rounded-lg text-white font-medium ${
+                        tempTranscript.trim() 
+                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          : 'bg-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      Add Transcript & Run Analysis
+                    </button>
+                  </div>
+                  
+                  {/* Option 2: Generate Video Link */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Video size={18} className="text-purple-600" />
+                      Option 2: Generate Video Interview Link
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Send a video interview link to the candidate to record their responses.
+                    </p>
+                                         <button
+                       onClick={() => {
+                         // Generate and copy the link
+                         const interviewId = `${params.jobId}-${params.candidateId}`
+                         const interviewUrl = `${window.location.origin}/interview/${interviewId}`
+                         
+                         navigator.clipboard.writeText(interviewUrl).then(() => {
+                           // Show success feedback
+                           setLinkCopied(true)
+                           
+                           setTimeout(() => {
+                             setShowNoContentModal(false)
+                             setTempTranscript('')
+                             setLinkCopied(false)
+                           }, 1500) // Close modal after showing success
+                         }).catch(() => {
+                           // Fallback if clipboard doesn't work
+                           prompt(`🎥 Interview link for ${candidate.name}:\n\nCopy this link and send it to them:`, interviewUrl)
+                           setShowNoContentModal(false)
+                           setTempTranscript('')
+                           setLinkCopied(false)
+                         })
+                       }}
+                       className={`px-4 py-2 rounded-lg flex items-center gap-2 text-white font-medium ${
+                         linkCopied 
+                           ? 'bg-green-600 hover:bg-green-700' 
+                           : 'bg-purple-600 hover:bg-purple-700'
+                       }`}
+                     >
+                       {linkCopied ? (
+                         <>
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                           </svg>
+                           Link Copied!
+                         </>
+                       ) : (
+                         <>
+                           <Video size={16} />
+                           Generate Interview Link
+                         </>
+                       )}
+                     </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowNoContentModal(false)
+                    setTempTranscript('')
+                    setLinkCopied(false)
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
