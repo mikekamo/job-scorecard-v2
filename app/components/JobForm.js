@@ -47,6 +47,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [isGeneratingCompetencies, setIsGeneratingCompetencies] = useState(false)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
+  const [isGeneratingSingleQuestion, setIsGeneratingSingleQuestion] = useState(null) // Track which competency is generating
   const [showAIModal, setShowAIModal] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
@@ -194,6 +195,55 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       alert('Failed to generate questions. Please try again.')
     } finally {
       setIsGeneratingQuestions(false)
+    }
+  }
+
+  const generateSingleQuestion = async (competency) => {
+    if (!formData.title.trim() || !competency.name.trim() || !competency.description.trim()) {
+      return // Don't generate if required fields are empty
+    }
+
+    setIsGeneratingSingleQuestion(competency.id)
+    try {
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobTitle: formData.title,
+          jobDescription: formData.description,
+          competencies: [competency], // Send only the single competency
+          company: company,
+          onePerCompetency: true
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate question')
+      }
+
+      const data = await response.json()
+      
+      if (data.questions && data.questions.length > 0) {
+        const newQuestion = {
+          ...data.questions[0],
+          competencyId: competency.id
+        }
+        
+        // Update the question for this competency
+        setFormData(prev => ({
+          ...prev,
+          interviewQuestions: prev.interviewQuestions.map(q => 
+            q.competencyId === competency.id ? newQuestion : q
+          )
+        }))
+      }
+    } catch (error) {
+      console.error('Error generating single question:', error)
+      // Silently fail for auto-generation to avoid disrupting user experience
+    } finally {
+      setIsGeneratingSingleQuestion(null)
     }
   }
 
@@ -407,7 +457,19 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       </div>
       
       <div className="max-w-6xl mx-auto p-6">
-        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 relative">
+          {/* Loading overlay when generating single question */}
+          {isGeneratingSingleQuestion && (
+            <div className="absolute inset-0 bg-white bg-opacity-80 z-20 rounded-lg flex items-center justify-center">
+              <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                <div className="flex items-center gap-3 text-purple-600">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="font-medium">Generating interview question with AI...</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">Please wait while we create the perfect question for your competency.</p>
+              </div>
+            </div>
+          )}
           <div className="space-y-6">
             {/* Basic Job Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -506,9 +568,9 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                     <button
                       type="button"
                       onClick={generateCompetencies}
-                      disabled={!formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies}
+                      disabled={!formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies || isGeneratingSingleQuestion}
                       className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
-                        !formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies
+                        !formData.title.trim() || formData.description.length < 100 || isGeneratingCompetencies || isGeneratingSingleQuestion
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                       }`}
@@ -517,6 +579,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                           ? 'Enter a job title first' 
                           : formData.description.length < 100
                           ? `Job description needs at least 100 characters (current: ${formData.description.length})`
+                          : isGeneratingSingleQuestion
+                          ? 'Please wait for current generation to complete'
                           : 'Generate competencies with AI'
                       }
                     >
@@ -526,7 +590,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                     <button
                       type="button"
                       onClick={addCompetency}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors"
+                      disabled={isGeneratingSingleQuestion}
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
                       <Plus className="h-4 w-4" />
                       Add Competency
@@ -555,7 +620,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                             <button
                               type="button"
                               onClick={() => removeCompetency(competency.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
+                              disabled={isGeneratingSingleQuestion}
+                              className="text-red-500 hover:text-red-700 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -573,7 +639,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                               required
                               value={competency.name}
                               onChange={(e) => handleCompetencyChange(competency.id, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              disabled={isGeneratingSingleQuestion}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                               placeholder="Competency name"
                             />
                           </div>
@@ -586,15 +653,41 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                               type="text"
                               value={competency.description}
                               onChange={(e) => handleCompetencyChange(competency.id, 'description', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              onBlur={() => {
+                                // Auto-generate question when user finishes editing description
+                                if (competency.name.trim() && competency.description.trim() && !isGeneratingSingleQuestion) {
+                                  generateSingleQuestion(competency)
+                                }
+                              }}
+                              disabled={isGeneratingSingleQuestion}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                               placeholder="What does this competency measure?"
                             />
                           </div>
                         </div>
 
                         {/* Associated Interview Question */}
-                        {associatedQuestion && (
-                          <div className="border-t border-gray-100 pt-4">
+                        <div className="border-t border-gray-100 pt-4">
+                          {isGeneratingSingleQuestion === competency.id ? (
+                            // Loading state for question generation
+                            <div className="flex items-center gap-3 py-8">
+                              <div className="flex-shrink-0">
+                                <span className="text-sm font-semibold text-white bg-purple-600 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                  🎥
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 text-purple-600">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span className="text-sm font-medium">Generating interview question...</span>
+                                </div>
+                                <div className="mt-2 bg-gray-100 rounded-md h-20 flex items-center justify-center">
+                                  <span className="text-gray-500 text-sm">AI is crafting the perfect question for this competency</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : associatedQuestion ? (
+                            // Normal question display
                             <div className="flex items-start gap-3">
                               <div className="flex-shrink-0 mt-1">
                                 <span className="text-sm font-semibold text-white bg-purple-600 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
@@ -610,7 +703,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                                   rows={3}
                                   value={associatedQuestion.question}
                                   onChange={(e) => handleQuestionChange(associatedQuestion.id, 'question', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+                                  disabled={isGeneratingSingleQuestion}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                                   placeholder="What question should candidates answer for this competency?"
                                 />
                               </div>
@@ -645,16 +739,29 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                                         handleQuestionChange(associatedQuestion.id, 'timeLimit', 600); // Cap at 10 minutes
                                       }
                                     }}
+                                    disabled={isGeneratingSingleQuestion}
                                     placeholder="3"
-                                    className="w-8 border-0 bg-transparent text-sm text-center focus:outline-none font-medium text-gray-700"
+                                    className="w-8 border-0 bg-transparent text-sm text-center focus:outline-none font-medium text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
                                     title="Minutes"
                                   />
                                   <span className="text-gray-500 text-sm font-medium">minutes</span>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          ) : (
+                            // Empty state when no question exists
+                            <div className="flex items-center gap-3 py-4">
+                              <div className="flex-shrink-0">
+                                <span className="text-sm font-semibold text-white bg-gray-400 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                  🎥
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <span className="text-gray-500 text-sm">Complete the competency name and description to auto-generate an interview question</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -671,7 +778,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                 <button
                   type="button"
                   onClick={addCompetency}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+                  disabled={isGeneratingSingleQuestion}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <Plus className="h-4 w-4" />
                   Add Competency
@@ -686,7 +794,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                 <button
                   type="button"
                   onClick={handleBackStep}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md flex items-center gap-2 transition-colors"
+                  disabled={isGeneratingSingleQuestion}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back
@@ -697,7 +806,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
               {shouldShowCompetencies && (
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center gap-2 transition-colors"
+                  disabled={isGeneratingSingleQuestion}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4" />
                   {job ? 'Update Job' : 'Create Job'}
