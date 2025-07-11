@@ -57,6 +57,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showQuestionUpdateModal, setShowQuestionUpdateModal] = useState(false)
   const [pendingCompetencyUpdate, setPendingCompetencyUpdate] = useState(null)
   const [showTemplatesModal, setShowTemplatesModal] = useState(false)
+  const [activeTemplateTab, setActiveTemplateTab] = useState('competencies')
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('')
 
 
   // If editing existing job, show all steps
@@ -112,6 +114,37 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     })
     
     return allQuestions
+  }
+
+  // Filter competencies based on search query
+  const getFilteredCompetencies = () => {
+    const allCompetencies = getAllCompetencies()
+    
+    if (!templateSearchQuery.trim()) {
+      return allCompetencies
+    }
+    
+    const query = templateSearchQuery.toLowerCase()
+    return allCompetencies.filter(competency =>
+      competency.name.toLowerCase().includes(query) ||
+      competency.description.toLowerCase().includes(query) ||
+      competency.fromJob.toLowerCase().includes(query)
+    )
+  }
+
+  // Filter questions based on search query
+  const getFilteredQuestions = () => {
+    const allQuestions = getAllQuestions()
+    
+    if (!templateSearchQuery.trim()) {
+      return allQuestions
+    }
+    
+    const query = templateSearchQuery.toLowerCase()
+    return allQuestions.filter(question =>
+      question.question.toLowerCase().includes(query) ||
+      question.fromJob.toLowerCase().includes(query)
+    )
   }
 
   // Add competency from templates
@@ -643,7 +676,11 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setShowTemplatesModal(true)}
+                      onClick={() => {
+                        setActiveTemplateTab('competencies')
+                        setTemplateSearchQuery('')
+                        setShowTemplatesModal(true)
+                      }}
                       disabled={isGeneratingFullSection || isGeneratingSingleQuestion}
                       className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
                         isGeneratingFullSection || isGeneratingSingleQuestion
@@ -1144,7 +1181,10 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                   </span>
                 </div>
                 <button
-                  onClick={() => setShowTemplatesModal(false)}
+                  onClick={() => {
+                    setShowTemplatesModal(false)
+                    setTemplateSearchQuery('')
+                  }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1153,31 +1193,84 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Competencies Section */}
+              {/* Search Input */}
+              <div className="mb-6">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={templateSearchQuery}
+                    onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                    placeholder={`Search ${activeTemplateTab === 'competencies' ? 'competencies' : 'questions'}...`}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                  {templateSearchQuery && (
+                    <button
+                      onClick={() => setTemplateSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Tab Navigation */}
+              <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+                <button
+                  onClick={() => setActiveTemplateTab('competencies')}
+                  className={`flex-1 px-4 py-2 font-medium text-sm rounded-md transition-colors flex items-center justify-center gap-2 ${
+                    activeTemplateTab === 'competencies'
+                      ? 'bg-white text-green-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-xs">
+                    C
+                  </span>
+                  Competencies ({getFilteredCompetencies().length})
+                </button>
+                <button
+                  onClick={() => setActiveTemplateTab('questions')}
+                  className={`flex-1 px-4 py-2 font-medium text-sm rounded-md transition-colors flex items-center justify-center gap-2 ${
+                    activeTemplateTab === 'questions'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs">
+                    Q
+                  </span>
+                  Questions ({getFilteredQuestions().length})
+                </button>
+              </div>
+
+              {/* Content Area */}
+              {activeTemplateTab === 'competencies' ? (
                 <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-sm">
-                      C
-                    </span>
-                    Competencies
-                  </h4>
                   <p className="text-sm text-gray-600 mb-4">
                     Click any competency to add it to your current job
                   </p>
                   
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {getAllCompetencies().map((competency, index) => (
+                    {getFilteredCompetencies().map((competency, index) => (
                       <button
                         key={index}
                         type="button"
                         onClick={() => {
                           addCompetencyFromTemplate(competency)
                           setShowTemplatesModal(false)
+                          setTemplateSearchQuery('')
                         }}
-                        className="w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors group"
+                        className="w-full text-left p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors group"
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <p className="font-medium text-gray-900 group-hover:text-green-900 mb-1">
                               {competency.name}
@@ -1195,38 +1288,32 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                         </div>
                       </button>
                     ))}
-                    {getAllCompetencies().length === 0 && (
+                    {getFilteredCompetencies().length === 0 && (
                       <p className="text-gray-500 text-sm text-center py-8">
-                        No competencies found in your previous jobs
+                        {templateSearchQuery ? 'No matching competencies found' : 'No competencies found in your previous jobs'}
                       </p>
                     )}
                   </div>
                 </div>
-
-                {/* Questions Section */}
+              ) : (
                 <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm">
-                      Q
-                    </span>
-                    Interview Questions
-                  </h4>
                   <p className="text-sm text-gray-600 mb-4">
                     Click any question to add it to your current job
                   </p>
                   
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {getAllQuestions().map((question, index) => (
+                    {getFilteredQuestions().map((question, index) => (
                       <button
                         key={index}
                         type="button"
                         onClick={() => {
                           addQuestionFromTemplate(question)
                           setShowTemplatesModal(false)
+                          setTemplateSearchQuery('')
                         }}
-                        className="w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors group"
+                        className="w-full text-left p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors group"
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <p className="text-sm text-gray-900 group-hover:text-purple-900 leading-relaxed">
                               {question.question}
@@ -1244,18 +1331,21 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                         </div>
                       </button>
                     ))}
-                    {getAllQuestions().length === 0 && (
+                    {getFilteredQuestions().length === 0 && (
                       <p className="text-gray-500 text-sm text-center py-8">
-                        No questions found in your previous jobs
+                        {templateSearchQuery ? 'No matching questions found' : 'No questions found in your previous jobs'}
                       </p>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => setShowTemplatesModal(false)}
+                  onClick={() => {
+                    setShowTemplatesModal(false)
+                    setTemplateSearchQuery('')
+                  }}
                   className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Close
