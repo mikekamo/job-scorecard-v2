@@ -618,17 +618,11 @@ export default function CandidateDetailPage() {
                   <div 
                     className="relative"
                     onMouseEnter={() => {
-                      const hasContent = hasAnalyzableContent()
-                      console.log('Div hover - hasAnalyzableContent:', hasContent)
-                      if (!hasContent) {
-                        console.log('Showing tooltip')
+                      if (!hasAnalyzableContent()) {
                         setShowTooltip(true)
                       }
                     }}
-                    onMouseLeave={() => {
-                      console.log('Mouse left div, hiding tooltip')
-                      setShowTooltip(false)
-                    }}
+                    onMouseLeave={() => setShowTooltip(false)}
                   >
                     <button
                       onClick={runAIAnalysis}
