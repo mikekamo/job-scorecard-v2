@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy } from 'lucide-react'
+import { useJobStorage } from '../hooks/useJobStorage'
 
 // Question bank templates
 const QUESTION_BANK = [
@@ -24,6 +25,7 @@ const QUESTION_BANK = [
 ]
 
 export default function JobForm({ job, company, onSave, onCancel }) {
+  const { jobs } = useJobStorage()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
     title: job?.title || '',
@@ -54,10 +56,100 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
   const [showQuestionUpdateModal, setShowQuestionUpdateModal] = useState(false)
   const [pendingCompetencyUpdate, setPendingCompetencyUpdate] = useState(null)
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false)
 
 
   // If editing existing job, show all steps
   const isEditingJob = Boolean(job)
+
+  // Get all unique competencies from all jobs (excluding current job if editing)
+  const getAllCompetencies = () => {
+    const allCompetencies = []
+    const seenCompetencies = new Set()
+    
+    jobs.forEach(jobItem => {
+      // Skip current job if editing to avoid showing same competencies as templates
+      if (job && jobItem.id === job.id) return
+      
+      if (jobItem.competencies) {
+        jobItem.competencies.forEach(comp => {
+          const key = `${comp.name}-${comp.description}`
+          if (!seenCompetencies.has(key)) {
+            seenCompetencies.add(key)
+            allCompetencies.push({
+              ...comp,
+              fromJob: jobItem.title
+            })
+          }
+        })
+      }
+    })
+    
+    return allCompetencies
+  }
+
+  // Get all unique questions from all jobs (excluding current job if editing)
+  const getAllQuestions = () => {
+    const allQuestions = []
+    const seenQuestions = new Set()
+    
+    jobs.forEach(jobItem => {
+      // Skip current job if editing to avoid showing same questions as templates
+      if (job && jobItem.id === job.id) return
+      
+      if (jobItem.interviewQuestions) {
+        jobItem.interviewQuestions.forEach(question => {
+          const key = question.question
+          if (!seenQuestions.has(key)) {
+            seenQuestions.add(key)
+            allQuestions.push({
+              ...question,
+              fromJob: jobItem.title
+            })
+          }
+        })
+      }
+    })
+    
+    return allQuestions
+  }
+
+  // Add competency from templates
+  const addCompetencyFromTemplate = (templateCompetency) => {
+    const newId = Date.now().toString()
+    const newCompetency = {
+      id: newId,
+      name: templateCompetency.name,
+      description: templateCompetency.description,
+      weight: templateCompetency.weight || 1
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      competencies: [...prev.competencies, newCompetency]
+    }))
+  }
+
+  // Add question from templates
+  const addQuestionFromTemplate = (templateQuestion) => {
+    const newId = Date.now().toString()
+    // Try to find the best matching competency or use the first one
+    const bestCompetencyId = formData.competencies.length > 0 
+      ? formData.competencies[0].id 
+      : '1'
+    
+    const newQuestion = {
+      id: newId,
+      question: templateQuestion.question,
+      timeLimit: templateQuestion.timeLimit || 180,
+      competencyId: bestCompetencyId
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      interviewQuestions: [...prev.interviewQuestions, newQuestion]
+    }))
+  }
 
 
 
@@ -551,6 +643,20 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={() => setShowTemplatesModal(true)}
+                      disabled={isGeneratingFullSection || isGeneratingSingleQuestion}
+                      className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
+                        isGeneratingFullSection || isGeneratingSingleQuestion
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      }`}
+                      title="Use competencies and questions from your previous jobs"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Templates
+                    </button>
+                    <button
+                      type="button"
                       onClick={generateCompetencies}
                       disabled={!formData.title.trim() || formData.description.length < 100 || isGeneratingFullSection || isGeneratingSingleQuestion}
                       className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
@@ -1017,6 +1123,144 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                 <Sparkles className="h-4 w-4" />
                 Update Question
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Templates Modal */}
+      {showTemplatesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <Copy className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Templates</h3>
+                  <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                    From Your Previous Jobs
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowTemplatesModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Competencies Section */}
+                <div>
+                  <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-sm">
+                      C
+                    </span>
+                    Competencies
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Click any competency to add it to your current job
+                  </p>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {getAllCompetencies().map((competency, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          addCompetencyFromTemplate(competency)
+                          setShowTemplatesModal(false)
+                        }}
+                        className="w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors group"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 group-hover:text-green-900 mb-1">
+                              {competency.name}
+                            </p>
+                            <p className="text-sm text-gray-600 group-hover:text-green-700">
+                              {competency.description}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+                            <span className="bg-white px-2 py-1 rounded border">
+                              {competency.fromJob}
+                            </span>
+                            <Plus className="h-4 w-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {getAllCompetencies().length === 0 && (
+                      <p className="text-gray-500 text-sm text-center py-8">
+                        No competencies found in your previous jobs
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Questions Section */}
+                <div>
+                  <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm">
+                      Q
+                    </span>
+                    Interview Questions
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Click any question to add it to your current job
+                  </p>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {getAllQuestions().map((question, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          addQuestionFromTemplate(question)
+                          setShowTemplatesModal(false)
+                        }}
+                        className="w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors group"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-900 group-hover:text-purple-900 leading-relaxed">
+                              {question.question}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+                            <span className="bg-white px-2 py-1 rounded border">
+                              {Math.floor(question.timeLimit / 60)}m
+                            </span>
+                            <span className="bg-white px-2 py-1 rounded border text-xs">
+                              {question.fromJob}
+                            </span>
+                            <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {getAllQuestions().length === 0 && (
+                      <p className="text-gray-500 text-sm text-center py-8">
+                        No questions found in your previous jobs
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowTemplatesModal(false)}
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
