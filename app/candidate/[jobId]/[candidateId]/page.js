@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Play, Plus, Brain, Save, Trash2, Video, MessageSquare, User, Check } from 'lucide-react'
+import { ArrowLeft, Play, Plus, Brain, Save, Trash2, Video, MessageSquare, User, Check, Upload, X } from 'lucide-react'
 import { useJobStorage } from '../../../hooks/useJobStorage'
 
 export default function CandidateDetailPage() {
@@ -26,6 +26,9 @@ export default function CandidateDetailPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadContent, setUploadContent] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
 
   // Global escape key handler
   useEffect(() => {
@@ -40,12 +43,16 @@ export default function CandidateDetailPage() {
           setShowConfirmModal(null)
         } else if (showAddInterviewModal) {
           setShowAddInterviewModal(false)
+        } else if (showUploadModal) {
+          setShowUploadModal(false)
+          setUploadContent('')
+          setIsDragOver(false)
         }
       }
     }
 
     // Add event listener when any modal is open
-    if (showExplanationModal || showVideoModal || showConfirmModal || showAddInterviewModal) {
+    if (showExplanationModal || showVideoModal || showConfirmModal || showAddInterviewModal || showUploadModal) {
       document.addEventListener('keydown', handleEscapeKey)
     }
 
@@ -53,7 +60,7 @@ export default function CandidateDetailPage() {
     return () => {
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [showExplanationModal, showVideoModal, showConfirmModal, showAddInterviewModal])
+  }, [showExplanationModal, showVideoModal, showConfirmModal, showAddInterviewModal, showUploadModal])
 
   // Load job and candidate data
   useEffect(() => {
@@ -183,6 +190,84 @@ export default function CandidateDetailPage() {
       return null
     }
     return candidate.interviews[selectedInterviewIndex]
+  }
+
+  // Check if current interview has content that can be analyzed
+  const hasAnalyzableContent = () => {
+    const currentInterview = getCurrentInterview()
+    if (!currentInterview) return false
+    
+    // For video interviews: check if there are video responses
+    const isVideoInterview = currentInterview.type === 'video' && currentInterview.videoResponses && currentInterview.videoResponses.length > 0
+    
+    // For text interviews: check if there's content
+    const isTextInterview = currentInterview.content && currentInterview.content.trim()
+    
+    return isVideoInterview || isTextInterview
+  }
+
+  // Handle transcript upload
+  const handleUploadTranscript = () => {
+    setUploadContent('')
+    setIsDragOver(false)
+    setShowUploadModal(true)
+  }
+
+  // Handle file drop
+  const handleFileDrop = (e) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    const textFile = files.find(file => file.type === 'text/plain' || file.name.endsWith('.txt'))
+    
+    if (textFile) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setUploadContent(event.target.result)
+      }
+      reader.readAsText(textFile)
+    } else {
+      alert('Please upload a text file (.txt)')
+    }
+  }
+
+  // Handle drag over
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  // Handle drag leave
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  // Save uploaded transcript
+  const handleSaveTranscript = () => {
+    if (!uploadContent.trim()) return
+    
+    const currentInterview = getCurrentInterview()
+    if (!currentInterview) return
+    
+    const updatedInterview = {
+      ...currentInterview,
+      content: uploadContent,
+      transcript: uploadContent
+    }
+    
+    const updatedCandidate = {
+      ...candidate,
+      interviews: candidate.interviews.map((interview, index) => 
+        index === selectedInterviewIndex ? updatedInterview : interview
+      )
+    }
+    
+    updateCandidateData(updatedCandidate)
+    setShowUploadModal(false)
+    setUploadContent('')
+    setHasUnsavedChanges(true)
   }
 
   // Handle manual score changes
@@ -522,13 +607,22 @@ export default function CandidateDetailPage() {
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                   <button
+                    onClick={handleUploadTranscript}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Upload
+                  </button>
+                  
+                  <button
                     onClick={runAIAnalysis}
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || !hasAnalyzableContent()}
                     className={`px-4 py-2 rounded-lg text-white font-medium ${
-                      isAnalyzing 
+                      isAnalyzing || !hasAnalyzableContent()
                         ? 'bg-gray-400 cursor-not-allowed' 
                         : 'bg-purple-600 hover:bg-purple-700'
                     }`}
+                    title={!hasAnalyzableContent() ? (currentInterview?.type === 'video' ? 'No video responses available for analysis' : 'No transcript content available for analysis') : ''}
                   >
                     {isAnalyzing ? (
                       <>
@@ -569,6 +663,11 @@ export default function CandidateDetailPage() {
                       <div className="text-xs text-blue-600 mt-1">
                         ✨ AI analysis will automatically transcribe videos using OpenAI Whisper
                       </div>
+                      {!hasAnalyzableContent() && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          ⚠️ No video responses available for analysis
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -577,6 +676,11 @@ export default function CandidateDetailPage() {
                         <span className="ml-2">
                           • {new Date(currentInterview.createdAt).toLocaleDateString()}
                         </span>
+                      )}
+                      {!hasAnalyzableContent() && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          ⚠️ Add transcript content to enable AI analysis
+                        </div>
                       )}
                     </div>
                   )}
@@ -1313,6 +1417,129 @@ export default function CandidateDetailPage() {
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Transcript Modal */}
+      {showUploadModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowUploadModal(false)
+              setUploadContent('')
+              setIsDragOver(false)
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+               onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Upload Transcript</h2>
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false)
+                    setUploadContent('')
+                    setIsDragOver(false)
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Drag and Drop Area */}
+                <div
+                  onDrop={handleFileDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    isDragOver 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <Upload size={48} className={`mx-auto mb-4 ${
+                    isDragOver ? 'text-blue-500' : 'text-gray-400'
+                  }`} />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Drop your transcript file here
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    or click to browse for a .txt file
+                  </p>
+                  <input
+                    type="file"
+                    accept=".txt,text/plain"
+                    onChange={(e) => {
+                      const file = e.target.files[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = (event) => {
+                          setUploadContent(event.target.result)
+                        }
+                        reader.readAsText(file)
+                      }
+                    }}
+                    className="hidden"
+                    id="transcript-file-input"
+                  />
+                  <label
+                    htmlFor="transcript-file-input"
+                    className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                  >
+                    Choose File
+                  </label>
+                </div>
+
+                {/* Text Area for Pasting */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Or paste your transcript directly
+                  </h3>
+                  <textarea
+                    value={uploadContent}
+                    onChange={(e) => setUploadContent(e.target.value)}
+                    placeholder="Paste your interview transcript here..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md h-40 resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Character Count */}
+                {uploadContent && (
+                  <div className="text-sm text-gray-500">
+                    {uploadContent.length} characters
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-6">
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false)
+                    setUploadContent('')
+                    setIsDragOver(false)
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTranscript}
+                  disabled={!uploadContent.trim()}
+                  className={`px-4 py-2 rounded-lg text-white font-medium ${
+                    uploadContent.trim()
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Save Transcript
                 </button>
               </div>
             </div>
