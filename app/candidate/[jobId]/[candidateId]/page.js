@@ -29,6 +29,7 @@ export default function CandidateDetailPage() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadContent, setUploadContent] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
 
   // Global escape key handler
   useEffect(() => {
@@ -614,28 +615,51 @@ export default function CandidateDetailPage() {
                     Upload
                   </button>
                   
-                  <button
-                    onClick={runAIAnalysis}
-                    disabled={isAnalyzing || !hasAnalyzableContent()}
-                    className={`px-4 py-2 rounded-lg text-white font-medium ${
-                      isAnalyzing || !hasAnalyzableContent()
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-purple-600 hover:bg-purple-700'
-                    }`}
-                    title={!hasAnalyzableContent() ? (currentInterview?.type === 'video' ? 'No video responses available for analysis' : 'No transcript content available for analysis') : ''}
+                  <div 
+                    className="relative"
+                    onMouseEnter={() => {
+                      const hasContent = hasAnalyzableContent()
+                      console.log('Div hover - hasAnalyzableContent:', hasContent)
+                      if (!hasContent) {
+                        console.log('Showing tooltip')
+                        setShowTooltip(true)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      console.log('Mouse left div, hiding tooltip')
+                      setShowTooltip(false)
+                    }}
                   >
-                    {isAnalyzing ? (
-                      <>
-                        <div className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                        {currentInterview?.type === 'video' ? 'Transcribing & Analyzing...' : 'Analyzing...'}
-                      </>
-                    ) : (
-                      <>
-                        <Brain size={16} className="inline mr-2" />
-                        {currentInterview?.type === 'video' ? 'Transcribe & Analyze Videos' : 'Run AI Analysis'}
-                      </>
+                    <button
+                      onClick={runAIAnalysis}
+                      disabled={isAnalyzing || !hasAnalyzableContent()}
+                      className={`px-4 py-2 rounded-lg text-white font-medium ${
+                        isAnalyzing || !hasAnalyzableContent()
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-purple-600 hover:bg-purple-700'
+                      }`}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <div className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                          {currentInterview?.type === 'video' ? 'Transcribing & Analyzing...' : 'Analyzing...'}
+                        </>
+                      ) : (
+                        <>
+                          <Brain size={16} className="inline mr-2" />
+                          {currentInterview?.type === 'video' ? 'Transcribe & Analyze Videos' : 'Run AI Analysis'}
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Custom Tooltip */}
+                    {showTooltip && (
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg whitespace-nowrap z-10">
+                        Upload transcript to enable AI analysis
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                      </div>
                     )}
-                  </button>
+                  </div>
                   
                   {currentInterview.type === 'video' && candidate.videoResponses && (
                     <button
@@ -663,11 +687,6 @@ export default function CandidateDetailPage() {
                       <div className="text-xs text-blue-600 mt-1">
                         ✨ AI analysis will automatically transcribe videos using OpenAI Whisper
                       </div>
-                      {!hasAnalyzableContent() && (
-                        <div className="text-xs text-amber-600 mt-1">
-                          ⚠️ No video responses available for analysis
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div>
@@ -676,11 +695,6 @@ export default function CandidateDetailPage() {
                         <span className="ml-2">
                           • {new Date(currentInterview.createdAt).toLocaleDateString()}
                         </span>
-                      )}
-                      {!hasAnalyzableContent() && (
-                        <div className="text-xs text-amber-600 mt-1">
-                          ⚠️ Add transcript content to enable AI analysis
-                        </div>
                       )}
                     </div>
                   )}
