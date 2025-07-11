@@ -30,6 +30,7 @@ export default function CandidateDetailPage() {
   const [uploadContent, setUploadContent] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const [isAddingNewInterview, setIsAddingNewInterview] = useState(false)
 
   // Global escape key handler
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function CandidateDetailPage() {
           setShowUploadModal(false)
           setUploadContent('')
           setIsDragOver(false)
+          setIsAddingNewInterview(false)
         }
       }
     }
@@ -211,6 +213,15 @@ export default function CandidateDetailPage() {
   const handleUploadTranscript = () => {
     setUploadContent('')
     setIsDragOver(false)
+    setIsAddingNewInterview(false)
+    setShowUploadModal(true)
+  }
+
+  // Handle adding a new interview
+  const handleAddNewInterview = () => {
+    setUploadContent('')
+    setIsDragOver(false)
+    setIsAddingNewInterview(true)
     setShowUploadModal(true)
   }
 
@@ -249,23 +260,52 @@ export default function CandidateDetailPage() {
   const handleSaveTranscript = () => {
     if (!uploadContent.trim()) return
     
-    const currentInterview = getCurrentInterview()
-    if (!currentInterview) return
-    
-    const updatedInterview = {
-      ...currentInterview,
-      content: uploadContent,
-      transcript: uploadContent
+    if (isAddingNewInterview) {
+      // Create a new interview with the uploaded content
+      const interviews = candidate.interviews || []
+      const newInterviewNumber = interviews.length + 1
+      
+      const newInterview = {
+        id: newInterviewNumber.toString(),
+        title: `Interview ${newInterviewNumber}`,
+        type: 'text',
+        content: uploadContent,
+        transcript: uploadContent,
+        manualScores: {},
+        aiScores: {},
+        explanations: {},
+        createdAt: new Date().toISOString()
+      }
+      
+      const updatedCandidate = {
+        ...candidate,
+        interviews: [...interviews, newInterview]
+      }
+      
+      updateCandidateData(updatedCandidate)
+      setSelectedInterviewIndex(interviews.length) // Select the new interview
+      setIsAddingNewInterview(false)
+    } else {
+      // Update existing interview
+      const currentInterview = getCurrentInterview()
+      if (!currentInterview) return
+      
+      const updatedInterview = {
+        ...currentInterview,
+        content: uploadContent,
+        transcript: uploadContent
+      }
+      
+      const updatedCandidate = {
+        ...candidate,
+        interviews: candidate.interviews.map((interview, index) => 
+          index === selectedInterviewIndex ? updatedInterview : interview
+        )
+      }
+      
+      updateCandidateData(updatedCandidate)
     }
     
-    const updatedCandidate = {
-      ...candidate,
-      interviews: candidate.interviews.map((interview, index) => 
-        index === selectedInterviewIndex ? updatedInterview : interview
-      )
-    }
-    
-    updateCandidateData(updatedCandidate)
     setShowUploadModal(false)
     setUploadContent('')
     setHasUnsavedChanges(true)
@@ -595,7 +635,7 @@ export default function CandidateDetailPage() {
             
             {/* Add Interview Button */}
             <button
-              onClick={() => setShowAddInterviewModal(true)}
+              onClick={handleAddNewInterview}
               className="px-3 py-3 font-medium transition-all duration-200 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center"
               title="Add Interview"
             >
@@ -1442,6 +1482,7 @@ export default function CandidateDetailPage() {
               setShowUploadModal(false)
               setUploadContent('')
               setIsDragOver(false)
+              setIsAddingNewInterview(false)
             }
           }}
         >
@@ -1449,12 +1490,15 @@ export default function CandidateDetailPage() {
                onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Upload Transcript</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {isAddingNewInterview ? 'Add New Interview' : 'Upload Transcript'}
+                </h2>
                 <button
                   onClick={() => {
                     setShowUploadModal(false)
                     setUploadContent('')
                     setIsDragOver(false)
+                    setIsAddingNewInterview(false)
                   }}
                   className="text-gray-500 hover:text-gray-700 text-xl"
                 >
@@ -1481,7 +1525,10 @@ export default function CandidateDetailPage() {
                     Drop your transcript file here
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    or click to browse for a .txt file
+                    {isAddingNewInterview 
+                      ? 'Upload a transcript to create a new interview tab' 
+                      : 'or click to browse for a .txt file'
+                    }
                   </p>
                   <input
                     type="file"
@@ -1510,12 +1557,18 @@ export default function CandidateDetailPage() {
                 {/* Text Area for Pasting */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Or paste your transcript directly
+                    {isAddingNewInterview 
+                      ? 'Or paste transcript for new interview' 
+                      : 'Or paste your transcript directly'
+                    }
                   </h3>
                   <textarea
                     value={uploadContent}
                     onChange={(e) => setUploadContent(e.target.value)}
-                    placeholder="Paste your interview transcript here..."
+                    placeholder={isAddingNewInterview 
+                      ? 'Paste transcript for new interview here...' 
+                      : 'Paste your interview transcript here...'
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md h-40 resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1534,6 +1587,7 @@ export default function CandidateDetailPage() {
                     setShowUploadModal(false)
                     setUploadContent('')
                     setIsDragOver(false)
+                    setIsAddingNewInterview(false)
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
@@ -1548,7 +1602,7 @@ export default function CandidateDetailPage() {
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Save Transcript
+                  {isAddingNewInterview ? 'Add Interview' : 'Save Transcript'}
                 </button>
               </div>
             </div>
