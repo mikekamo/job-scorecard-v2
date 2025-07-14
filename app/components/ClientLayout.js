@@ -6,8 +6,9 @@ import Header from './Header'
 export default function ClientLayout({ children }) {
   const pathname = usePathname()
   
-  // Don't show header on login page
-  const showHeader = pathname !== '/login'
+  // AUTHENTICATION TEMPORARILY DISABLED - Always show header
+  const showHeader = true
+  // const showHeader = pathname !== '/login'
 
   const handleAddCompany = () => {
     // This will be handled by the Header component

@@ -11,6 +11,11 @@ export function middleware(request) {
     return NextResponse.next()
   }
 
+  // AUTHENTICATION TEMPORARILY DISABLED
+  // Just allow all requests through
+  return NextResponse.next()
+
+  /* COMMENTED OUT - AUTHENTICATION CODE
   // Check if user is already authenticated
   const authCookie = request.cookies.get('authenticated')
   const isAuthenticated = authCookie?.value === 'true'
@@ -39,6 +44,7 @@ export function middleware(request) {
   }
 
   return NextResponse.next()
+  */
 }
 
 export const config = {

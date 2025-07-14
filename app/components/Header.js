@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, ChevronDown, Settings, LogOut, Plus } from 'lucide-react'
+import { Building2, ChevronDown, Settings, Plus } from 'lucide-react'
+// LogOut import removed - authentication temporarily disabled
 
 // HireSprint Logo Component
 const HireSprintLogo = () => (
@@ -133,6 +134,7 @@ export default function Header({ onAddCompany }) {
     router.push('/')
   }
 
+  /* AUTHENTICATION TEMPORARILY DISABLED - handleLogout commented out
   const handleLogout = () => {
     localStorage.removeItem('scorecard-companies')
     localStorage.removeItem('current-company-id')
@@ -141,6 +143,7 @@ export default function Header({ onAddCompany }) {
     document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
     router.push('/login')
   }
+  */
 
   const handleAddCompany = () => {
     setShowDropdown(false)
@@ -230,6 +233,7 @@ export default function Header({ onAddCompany }) {
                         <Settings className="h-4 w-4 text-gray-500" />
                         <span className="text-gray-900">Settings</span>
                       </button>
+                      {/* AUTHENTICATION TEMPORARILY DISABLED - Logout button commented out
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
@@ -237,6 +241,7 @@ export default function Header({ onAddCompany }) {
                         <LogOut className="h-4 w-4 text-gray-500" />
                         <span className="text-gray-900">Logout</span>
                       </button>
+                      */}
                     </div>
                   </div>
                 </div>
