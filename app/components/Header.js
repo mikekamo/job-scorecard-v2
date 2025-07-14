@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, ChevronDown, Settings, Plus } from 'lucide-react'
+import { Building2, ChevronDown, Settings, Plus, Menu, X } from 'lucide-react'
 // LogOut import removed - authentication temporarily disabled
 
-// HireSprint Logo Component
+// HireSprint Logo Component (simplified for top bar)
 const HireSprintLogo = () => (
   <div className="relative flex items-center">
     {/* Target/Bullseye Icon */}
-    <svg width="40" height="40" viewBox="0 0 40 40" className="drop-shadow-sm mr-3">
+    <svg width="32" height="32" viewBox="0 0 40 40" className="drop-shadow-sm mr-2">
       {/* Outer circle */}
       <circle 
         cx="20" 
@@ -56,23 +56,13 @@ const HireSprintLogo = () => (
     </svg>
     
     {/* HireSprint Text */}
-    <div className="text-2xl font-bold text-gray-900 tracking-tight">
+    <div className="text-xl font-bold text-gray-900 tracking-tight">
       hiresprint
     </div>
-    
-    {/* Subtle animation */}
-    <style jsx>{`
-      svg {
-        transition: transform 0.2s ease;
-      }
-      .relative:hover svg {
-        transform: scale(1.05);
-      }
-    `}</style>
   </div>
 )
 
-export default function Header({ onAddCompany }) {
+export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuOpen }) {
   const [companies, setCompanies] = useState([])
   const [currentCompany, setCurrentCompany] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -153,110 +143,123 @@ export default function Header({ onAddCompany }) {
   }
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <div className="flex items-center gap-6">
-            <HireSprintLogo />
-            <div>
-              <p className="text-base font-medium text-gray-600 tracking-wide">save time, choose right</p>
-            </div>
-          </div>
-
-          {/* Company Dropdown */}
-          {companies.length > 0 && currentCompany && (
-            <div className="relative">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Building2 className="h-3 w-3 text-blue-600" />
-                  </div>
-                  <span className="font-semibold text-gray-900">{currentCompany.name}</span>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              </button>
-
-              {showDropdown && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  <div className="py-2">
-                    {/* Current Company Header */}
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Building2 className="h-3 w-3 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{currentCompany.name}</p>
-                          <p className="text-xs text-gray-600 font-medium">Current company</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Other Companies */}
-                    {companies.filter(c => c.id !== currentCompany.id).length > 0 && (
-                      <div className="border-b border-gray-100">
-                        <div className="px-4 py-2">
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Switch to</p>
-                        </div>
-                        {companies.filter(c => c.id !== currentCompany.id).map((company) => (
-                          <button
-                            key={company.id}
-                            onClick={() => switchToCompany(company)}
-                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 hover:bg-blue-50 transition-all duration-200 text-left focus:outline-none focus:bg-blue-50"
-                          >
-                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                              <Building2 className="h-3 w-3 text-gray-600" />
-                            </div>
-                            <span className="text-gray-900">{company.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div>
-                      <button
-                        onClick={handleAddCompany}
-                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-green-50 hover:text-green-700 transition-all duration-200 text-left focus:outline-none focus:bg-green-50"
-                      >
-                        <Plus className="h-4 w-4 text-gray-500 group-hover:text-green-600" />
-                        <span className="text-gray-900">Add Company</span>
-                      </button>
-                      <button
-                        onClick={() => setShowDropdown(false)}
-                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:bg-gray-50"
-                      >
-                        <Settings className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-900">Settings</span>
-                      </button>
-                      {/* AUTHENTICATION TEMPORARILY DISABLED - Logout button commented out
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
-                      >
-                        <LogOut className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-900">Logout</span>
-                      </button>
-                      */}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Click outside to close dropdown */}
-              {showDropdown && (
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowDropdown(false)}
-                />
-              )}
-            </div>
+    <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
+      {/* Left side - Mobile menu button and logo */}
+      <div className="flex items-center gap-4">
+        {/* Mobile menu button */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5 text-gray-600" />
+          ) : (
+            <Menu className="h-5 w-5 text-gray-600" />
           )}
+        </button>
+
+        {/* Logo - Hidden on mobile when sidebar is open */}
+        <div className={`md:block ${isMobileMenuOpen ? 'hidden' : 'block'}`}>
+          <HireSprintLogo />
         </div>
+      </div>
+
+      {/* Right side - Company dropdown */}
+      <div className="flex items-center gap-4">
+        {/* Company Dropdown */}
+        {companies.length > 0 && currentCompany && (
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building2 className="h-3 w-3 text-blue-600" />
+                </div>
+                <span className="font-semibold text-gray-900 text-sm sm:text-base">
+                  {currentCompany.name}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            </button>
+
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="py-2">
+                  {/* Current Company Header */}
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Building2 className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{currentCompany.name}</p>
+                        <p className="text-xs text-gray-600 font-medium">Current company</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Companies */}
+                  {companies.filter(c => c.id !== currentCompany.id).length > 0 && (
+                    <div className="border-b border-gray-100">
+                      <div className="px-4 py-2">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Switch to</p>
+                      </div>
+                      {companies.filter(c => c.id !== currentCompany.id).map((company) => (
+                        <button
+                          key={company.id}
+                          onClick={() => switchToCompany(company)}
+                          className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 hover:bg-blue-50 transition-all duration-200 text-left focus:outline-none focus:bg-blue-50"
+                        >
+                          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Building2 className="h-3 w-3 text-gray-600" />
+                          </div>
+                          <span className="text-gray-900">{company.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div>
+                    <button
+                      onClick={handleAddCompany}
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-green-50 hover:text-green-700 transition-all duration-200 text-left focus:outline-none focus:bg-green-50"
+                    >
+                      <Plus className="h-4 w-4 text-gray-500 group-hover:text-green-600" />
+                      <span className="text-gray-900">Add Company</span>
+                    </button>
+                    <button
+                      onClick={() => setShowDropdown(false)}
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:bg-gray-50"
+                    >
+                      <Settings className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900">Settings</span>
+                    </button>
+                    {/* AUTHENTICATION TEMPORARILY DISABLED - Logout button commented out
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
+                    >
+                      <LogOut className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900">Logout</span>
+                    </button>
+                    */}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Click outside to close dropdown */}
+            {showDropdown && (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowDropdown(false)}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

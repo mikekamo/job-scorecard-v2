@@ -90,6 +90,19 @@ export default function CompanyJobsPage() {
     }
   }, [searchParams, jobs, isLoading])
 
+  // Handle add-job parameter to open job creation form
+  useEffect(() => {
+    if (!isLoading) {
+      const addJob = searchParams.get('add-job')
+      if (addJob === 'true') {
+        setCurrentView('create-job')
+        setSelectedJob(null)
+        // Remove the parameter from URL
+        router.replace(`/company/${companyId}`, undefined, { shallow: true })
+      }
+    }
+  }, [searchParams, isLoading, companyId, router])
+
   // Function to reload data from server (for checking new video interviews)
   const reloadData = async () => {
     try {
