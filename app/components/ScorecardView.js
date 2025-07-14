@@ -343,7 +343,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
               <button
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
-                className="px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-3 text-gray-600 bg-white border border-gray-200 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 flex items-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
                 title="Refresh to check for new candidates"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -351,14 +351,14 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
               </button>
               <button
                 onClick={exportScorecard}
-                className="px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-5 py-3 text-gray-600 bg-white border border-gray-200 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-gray-200"
               >
                 <Download className="h-4 w-4" />
                 Export
               </button>
               <button
                 onClick={() => setShowAddCandidate(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 hover:scale-105 hover:shadow-lg text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-blue-200"
               >
                 <Plus className="h-4 w-4" />
                 Add Candidate
@@ -371,7 +371,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {job.candidates && job.candidates.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-white/50 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-white/50 overflow-hidden hover:shadow-lg transition-shadow duration-300">
             {/* Filter Panel */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between flex-wrap gap-4">
@@ -381,7 +381,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
                     <select 
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     >
                       <option value="name">Name</option>
                       <option value="myScore">Total Score</option>
@@ -392,7 +392,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     >
                       {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
                     </button>
@@ -577,22 +577,22 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
 
             {/* Summary Stats */}
             <div className="bg-gray-50 px-6 py-4 border-t">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 transform text-center">
                   <div className="text-2xl font-bold text-gray-900">{job.candidates.length}</div>
                   <div className="text-sm text-gray-600">Total Candidates</div>
                 </div>
-                <div>
+                <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 transform text-center">
                   <div className="text-2xl font-bold text-gray-900">{job.competencies.length}</div>
                   <div className="text-sm text-gray-600">Competencies</div>
                 </div>
-                <div>
+                <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 transform text-center">
                   <div className="text-2xl font-bold text-red-600">
                     {getNewCandidatesCount()}
                   </div>
                   <div className="text-sm text-gray-600">New Candidates</div>
                 </div>
-                <div>
+                <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 transform text-center">
                   <div className="text-2xl font-bold text-green-600">
                     {job.candidates.filter(c => {
                       const points = calculateTotalPoints(c)
@@ -602,7 +602,7 @@ export default function ScorecardView({ job, company, onAddCandidate, onUpdateSc
                   </div>
                   <div className="text-sm text-gray-600">High Performers (80%+)</div>
                 </div>
-                <div>
+                <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 transform text-center">
                   <div className="text-2xl font-bold text-gray-900">
                     {(() => {
                       if (job.candidates.length === 0) return '0%'

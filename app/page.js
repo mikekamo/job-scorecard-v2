@@ -236,11 +236,11 @@ export default function Home() {
         {/* Create Company Form */}
         {showCreateForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Company</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="bg-white rounded-xl max-w-md w-full p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Add New Company</h3>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
                     Company Name *
                   </label>
                   <input
@@ -253,7 +253,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
                     Website
                   </label>
                   <input
@@ -265,7 +265,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
                     Description
                   </label>
                   <textarea
@@ -276,17 +276,17 @@ export default function Home() {
                     placeholder="Brief description of the company..."
                   />
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-4 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform focus:outline-none focus:ring-4 focus:ring-blue-200"
                   >
                     Add Company
                   </button>
@@ -298,13 +298,13 @@ export default function Home() {
 
         {/* Companies Grid */}
         {companies.length === 0 ? (
-          <div className="text-center py-12">
-            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to hiresprint!</h3>
-            <p className="text-gray-600 mb-4">Get started by adding your first company to create AI-powered hiring scorecards</p>
+          <div className="text-center py-16">
+            <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">Welcome to hiresprint!</h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">Get started by adding your first company to create AI-powered hiring scorecards</p>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:bg-blue-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform focus:outline-none focus:ring-4 focus:ring-blue-200"
             >
               <Plus className="h-5 w-5" />
               Add Company
@@ -323,23 +323,23 @@ export default function Home() {
                       <Building2 className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{company.name}</h3>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">{company.name}</h3>
                       {company.website && (
-                        <p className="text-sm text-gray-500">{company.website}</p>
+                        <p className="text-sm text-blue-600 hover:text-blue-800 transition-colors">{company.website}</p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => editCompany(company)}
-                      className="p-1 text-gray-400 hover:text-gray-600"
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"
                       title="Edit company"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => deleteCompany(company.id)}
-                      className="p-1 text-gray-400 hover:text-red-600"
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-red-200"
                       title="Delete company"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -348,7 +348,7 @@ export default function Home() {
                 </div>
                 
                 {company.description && (
-                  <p className="text-gray-600 text-sm mb-4">{company.description}</p>
+                  <p className="text-gray-600 text-base mb-6 leading-relaxed">{company.description}</p>
                 )}
                 
                 <div className="flex items-center justify-between">
@@ -360,7 +360,7 @@ export default function Home() {
                   </div>
                   <button
                     onClick={() => goToCompanyJobs(company.id)}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold hover:bg-blue-50 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 transform"
                   >
                     Manage Jobs
                     <ArrowRight className="h-4 w-4" />

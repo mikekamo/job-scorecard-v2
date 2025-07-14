@@ -157,10 +157,10 @@ export default function Header({ onAddCompany }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <HireSprintLogo />
             <div>
-              <p className="text-gray-600 mt-1">save time, choose right</p>
+              <p className="text-base font-medium text-gray-600 tracking-wide">save time, choose right</p>
             </div>
           </div>
 
@@ -169,13 +169,13 @@ export default function Header({ onAddCompany }) {
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                     <Building2 className="h-3 w-3 text-blue-600" />
                   </div>
-                  <span className="font-medium text-gray-900">{currentCompany.name}</span>
+                  <span className="font-semibold text-gray-900">{currentCompany.name}</span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-gray-500" />
               </button>
@@ -190,8 +190,8 @@ export default function Header({ onAddCompany }) {
                           <Building2 className="h-3 w-3 text-blue-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{currentCompany.name}</p>
-                          <p className="text-xs text-gray-500">Current company</p>
+                          <p className="font-semibold text-gray-900">{currentCompany.name}</p>
+                          <p className="text-xs text-gray-600 font-medium">Current company</p>
                         </div>
                       </div>
                     </div>
@@ -206,7 +206,7 @@ export default function Header({ onAddCompany }) {
                           <button
                             key={company.id}
                             onClick={() => switchToCompany(company)}
-                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
+                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 hover:bg-blue-50 transition-all duration-200 text-left focus:outline-none focus:bg-blue-50"
                           >
                             <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
                               <Building2 className="h-3 w-3 text-gray-600" />
@@ -221,14 +221,14 @@ export default function Header({ onAddCompany }) {
                     <div>
                       <button
                         onClick={handleAddCompany}
-                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
+                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-green-50 hover:text-green-700 transition-all duration-200 text-left focus:outline-none focus:bg-green-50"
                       >
-                        <Plus className="h-4 w-4 text-gray-500" />
+                        <Plus className="h-4 w-4 text-gray-500 group-hover:text-green-600" />
                         <span className="text-gray-900">Add Company</span>
                       </button>
                       <button
                         onClick={() => setShowDropdown(false)}
-                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
+                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:bg-gray-50"
                       >
                         <Settings className="h-4 w-4 text-gray-500" />
                         <span className="text-gray-900">Settings</span>

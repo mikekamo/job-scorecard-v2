@@ -37,7 +37,7 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
-        <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out transform">
           <div className="p-6">
             {/* Job Header */}
             <div className="flex items-start justify-between mb-4">
@@ -51,7 +51,7 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
                 </span>
                 <button
                   onClick={() => onViewScorecard(job)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200"
                   title="View Candidates"
                 >
                   <ArrowRight className="h-5 w-5" />
@@ -85,17 +85,17 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-2">
               <button
                 onClick={() => onEditJob(job)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"
                 title="Edit Job"
               >
                 <Edit className="h-5 w-5" />
               </button>
               <button
                 onClick={() => onDuplicateJob(job)}
-                className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="p-3 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-blue-200"
                 title="Duplicate Job"
               >
                 <Copy className="h-5 w-5" />
@@ -103,13 +103,13 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
               <div className="relative">
                 <button
                   onClick={() => handleGenerateJobInterviewLink(job)}
-                  className="p-2 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  className="p-3 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-purple-200"
                   title="Generate Interview Link"
                 >
                   <Video className="h-5 w-5" />
                 </button>
                 {showLinkNotification === job.id && (
-                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-pulse flex items-center gap-1">
+                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-bounce flex items-center gap-1">
                     <Check className="h-3 w-3" />
                     Link copied!
                   </div>
@@ -121,7 +121,7 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
                     onDeleteJob(job.id)
                   }
                 }}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-red-200"
                 title="Delete Job"
               >
                 <Trash2 className="h-5 w-5" />
