@@ -10,8 +10,16 @@ import {
   Settings, 
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Plus,
-  Building2
+  Building2,
+  User,
+  Shield,
+  Bell,
+  CreditCard,
+  Database,
+  Zap
 } from 'lucide-react'
 
 const navigationItems = [
@@ -56,7 +64,52 @@ const navigationItems = [
     href: '/settings',
     icon: Settings,
     description: 'App configuration',
-    matchPaths: ['/settings']
+    matchPaths: ['/settings'],
+    hasDropdown: true,
+    dropdownItems: [
+      {
+        id: 'account',
+        name: 'Account & Profile',
+        description: 'Personal information and preferences',
+        icon: User,
+        href: '/settings?section=account'
+      },
+      {
+        id: 'company',
+        name: 'Company Settings',
+        description: 'Company profile and team management',
+        icon: Building2,
+        href: '/settings?section=company'
+      },
+      {
+        id: 'notifications',
+        name: 'Notifications & Alerts',
+        description: 'Email and notification preferences',
+        icon: Bell,
+        href: '/settings?section=notifications'
+      },
+      {
+        id: 'integrations',
+        name: 'Integrations & API',
+        description: 'Connect with external tools',
+        icon: Zap,
+        href: '/settings?section=integrations'
+      },
+      {
+        id: 'billing',
+        name: 'Billing & Subscription',
+        description: 'Plan and payment management',
+        icon: CreditCard,
+        href: '/settings?section=billing'
+      },
+      {
+        id: 'data',
+        name: 'Data & Privacy',
+        description: 'Export, backup, and privacy settings',
+        icon: Database,
+        href: '/settings?section=data'
+      }
+    ]
   }
 ]
 
@@ -64,6 +117,7 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
   const pathname = usePathname()
   const router = useRouter()
   const [hoveredItem, setHoveredItem] = useState(null)
+  const [expandedDropdown, setExpandedDropdown] = useState(null)
 
   const isActiveRoute = (item) => {
     // Handle special cases
@@ -81,6 +135,11 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
       return pathname.startsWith('/candidate')
     }
     
+    // For settings, check if we're on the settings page
+    if (item.id === 'settings') {
+      return pathname.startsWith('/settings')
+    }
+    
     // For other routes, check if pathname starts with any match path
     return item.matchPaths.some(path => {
       if (path === '/') return pathname === '/'
@@ -89,16 +148,23 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
   }
 
   const handleNavigation = (item) => {
-    if (item.id === 'jobs' || item.id === 'dashboard') {
+    if (item.hasDropdown) {
+      // Toggle dropdown instead of navigating
+      setExpandedDropdown(expandedDropdown === item.id ? null : item.id)
+    } else if (item.id === 'jobs' || item.id === 'dashboard') {
       router.push('/')
     } else if (item.id === 'candidates') {
       router.push('/candidates')
     } else if (item.id === 'settings') {
-      // For now, redirect to home since settings page doesn't exist yet
-      router.push('/')
+      router.push('/settings')
     } else {
       router.push(item.href)
     }
+  }
+
+  const handleDropdownItemClick = (item) => {
+    router.push(item.href)
+    setExpandedDropdown(null) // Close dropdown after selection
   }
 
   const handleAddJob = () => {
@@ -110,6 +176,11 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
       router.push('/?add-company=true')
     }
   }
+
+  // Close dropdown when clicking outside or when route changes
+  useEffect(() => {
+    setExpandedDropdown(null)
+  }, [pathname])
 
   return (
     <div className={`
@@ -168,6 +239,7 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
         {navigationItems.map((item) => {
           const Icon = item.icon
           const isActive = isActiveRoute(item)
+          const isDropdownExpanded = expandedDropdown === item.id
           
           return (
             <div key={item.id} className="relative">
@@ -189,9 +261,44 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
                 {!isCollapsed && (
-                  <span className="font-medium">{item.name}</span>
+                  <>
+                    <span className="font-medium flex-1">{item.name}</span>
+                    {item.hasDropdown && (
+                      <div className="ml-auto">
+                        {isDropdownExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </button>
+
+              {/* Dropdown Items */}
+              {!isCollapsed && item.hasDropdown && isDropdownExpanded && (
+                <div className="mt-1 ml-8 space-y-1">
+                  {item.dropdownItems.map((dropdownItem) => {
+                    const DropdownIcon = dropdownItem.icon
+                    return (
+                      <button
+                        key={dropdownItem.id}
+                        onClick={() => handleDropdownItemClick(dropdownItem)}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm
+                          text-gray-600 hover:bg-gray-50 hover:text-gray-900 
+                          transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <DropdownIcon className="h-4 w-4 text-gray-400" />
+                        <div className="flex-1">
+                          <div className="font-medium">{dropdownItem.name}</div>
+                          <div className="text-xs text-gray-500">{dropdownItem.description}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
 
               {/* Tooltip for collapsed sidebar */}
               {isCollapsed && hoveredItem === item.id && (
