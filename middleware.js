@@ -12,12 +12,21 @@ export function middleware(request) {
   }
 
   // Check if user is already authenticated
-  const isAuthenticated = request.cookies.get('authenticated')?.value === 'true'
+  const authCookie = request.cookies.get('authenticated')
+  const isAuthenticated = authCookie?.value === 'true'
+  
+  // Debug logging
+  console.log('Middleware check:', {
+    path: request.nextUrl.pathname,
+    cookieValue: authCookie?.value,
+    isAuthenticated
+  })
   
   // If accessing login page
   if (request.nextUrl.pathname === '/login') {
     // If already authenticated, redirect to home
     if (isAuthenticated) {
+      console.log('Already authenticated, redirecting to home')
       return NextResponse.redirect(new URL('/', request.url))
     }
     return NextResponse.next()
@@ -25,6 +34,7 @@ export function middleware(request) {
 
   // If not authenticated and not on login page, redirect to login
   if (!isAuthenticated) {
+    console.log('Not authenticated, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

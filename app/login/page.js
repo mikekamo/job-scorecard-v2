@@ -25,8 +25,12 @@ export default function LoginPage() {
 
       if (response.ok) {
         // Set authentication cookie and redirect
-        document.cookie = 'authenticated=true; path=/; max-age=86400' // 24 hours
-        router.push('/')
+        document.cookie = 'authenticated=true; path=/; max-age=86400; SameSite=Lax' // 24 hours
+        
+        console.log('Cookie set, redirecting to home...')
+        
+        // Use window.location.href for more reliable navigation with authentication changes
+        window.location.href = '/'
       } else {
         setError('Invalid password. Please try again.')
       }

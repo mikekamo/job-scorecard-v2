@@ -550,6 +550,42 @@ export default function CandidateDetailPage() {
     }
   }
 
+  // Delete interview
+  const handleDeleteInterview = async (interviewIndex) => {
+    const interview = candidate.interviews[interviewIndex]
+    
+    // Don't allow deleting the last interview
+    if (candidate.interviews.length <= 1) {
+      alert('Cannot delete the last interview. A candidate must have at least one interview.')
+      return
+    }
+    
+    const shouldDelete = await showConfirmationModal({
+      title: 'Delete Interview',
+      message: `Are you sure you want to delete "${interview.title}"? This action cannot be undone.`,
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      type: 'delete'
+    })
+    
+    if (shouldDelete) {
+      const updatedInterviews = candidate.interviews.filter((_, index) => index !== interviewIndex)
+      const updatedCandidate = {
+        ...candidate,
+        interviews: updatedInterviews
+      }
+      
+      // Adjust selected interview index if needed
+      if (selectedInterviewIndex >= updatedInterviews.length) {
+        setSelectedInterviewIndex(updatedInterviews.length - 1)
+      } else if (selectedInterviewIndex > interviewIndex) {
+        setSelectedInterviewIndex(selectedInterviewIndex - 1)
+      }
+      
+      updateCandidateData(updatedCandidate)
+    }
+  }
+
   if (!job || !candidate) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -615,22 +651,40 @@ export default function CandidateDetailPage() {
         <div className="mb-6">
           <div className="flex bg-gray-100 rounded-t-lg p-1 gap-1">
             {candidate.interviews?.map((interview, index) => (
-              <button
+              <div
                 key={interview.id}
-                onClick={() => setSelectedInterviewIndex(index)}
-                className={`px-5 py-3 font-medium transition-all duration-200 rounded-lg relative flex items-center gap-2 ${
+                className={`px-5 py-3 font-medium transition-all duration-200 rounded-lg relative flex items-center gap-2 group ${
                   selectedInterviewIndex === index
                     ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                <span>{interview.title}</span>
-                {interview.type === 'video' && (
-                  <Video size={14} className={`${
-                    selectedInterviewIndex === index ? 'text-blue-600' : 'text-gray-500'
-                  }`} />
+                <button
+                  onClick={() => setSelectedInterviewIndex(index)}
+                  className="flex items-center gap-2 flex-1"
+                >
+                  <span>{interview.title}</span>
+                  {interview.type === 'video' && (
+                    <Video size={14} className={`${
+                      selectedInterviewIndex === index ? 'text-blue-600' : 'text-gray-500'
+                    }`} />
+                  )}
+                </button>
+                
+                {/* Delete button - only show if more than 1 interview */}
+                {candidate.interviews.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteInterview(index)
+                    }}
+                    className="ml-1 p-1 rounded-full hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete Interview"
+                  >
+                    <X size={12} />
+                  </button>
                 )}
-              </button>
+              </div>
             ))}
             
             {/* Add Interview Button */}
