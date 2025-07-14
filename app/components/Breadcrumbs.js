@@ -90,6 +90,13 @@ export default function Breadcrumbs() {
               icon: Briefcase,
               isActive: isLast
             })
+          } else if (segment === 'templates') {
+            breadcrumbs.push({
+              name: 'Templates',
+              href: isLast ? null : currentPath,
+              icon: FileText,
+              isActive: isLast
+            })
           } else if (config) {
             breadcrumbs.push({
               name: config.name,

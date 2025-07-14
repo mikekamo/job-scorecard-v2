@@ -39,6 +39,8 @@ const navigationItems = [
     description: 'View candidate profiles',
     matchPaths: ['/candidate', '/candidates']
   },
+  // Templates temporarily hidden for simplicity
+  /*
   {
     id: 'templates',
     name: 'Templates',
@@ -47,6 +49,7 @@ const navigationItems = [
     description: 'Job and competency templates',
     matchPaths: ['/templates']
   },
+  */
   {
     id: 'settings',
     name: 'Settings',
@@ -89,11 +92,7 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
     if (item.id === 'jobs' || item.id === 'dashboard') {
       router.push('/')
     } else if (item.id === 'candidates') {
-      // For now, redirect to home since candidates page doesn't exist yet
-      router.push('/')
-    } else if (item.id === 'templates') {
-      // For now, redirect to home since templates page doesn't exist yet
-      router.push('/')
+      router.push('/candidates')
     } else if (item.id === 'settings') {
       // For now, redirect to home since settings page doesn't exist yet
       router.push('/')

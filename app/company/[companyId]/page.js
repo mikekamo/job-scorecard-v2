@@ -94,10 +94,23 @@ export default function CompanyJobsPage() {
   useEffect(() => {
     if (!isLoading) {
       const addJob = searchParams.get('add-job')
+      const templateData = searchParams.get('template')
+      
       if (addJob === 'true') {
         setCurrentView('create-job')
         setSelectedJob(null)
-        // Remove the parameter from URL
+        
+        // If template data is provided, set it as the selected job for editing
+        if (templateData) {
+          try {
+            const template = JSON.parse(decodeURIComponent(templateData))
+            setSelectedJob(template)
+          } catch (error) {
+            console.error('Error parsing template data:', error)
+          }
+        }
+        
+        // Remove the parameters from URL
         router.replace(`/company/${companyId}`, undefined, { shallow: true })
       }
     }

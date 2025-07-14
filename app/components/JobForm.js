@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy, X, FileText } from 'lucide-react'
 import { useJobStorage } from '../hooks/useJobStorage'
 
 // Question bank templates
@@ -69,6 +69,24 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     const allCompetencies = []
     const seenCompetencies = new Set()
     
+    // Add competencies from templates page
+    try {
+      const selectedTemplates = JSON.parse(localStorage.getItem('selected-templates') || '{"competencies": [], "questions": []}')
+      selectedTemplates.competencies.forEach(comp => {
+        const key = `${comp.name}-${comp.description}`
+        if (!seenCompetencies.has(key)) {
+          seenCompetencies.add(key)
+          allCompetencies.push({
+            ...comp,
+            fromJob: `Template: ${comp.fromTemplate || 'Unknown'}`
+          })
+        }
+      })
+    } catch (error) {
+      console.error('Error loading template competencies:', error)
+    }
+    
+    // Add competencies from existing jobs
     jobs.forEach(jobItem => {
       // Skip current job if editing to avoid showing same competencies as templates
       if (job && jobItem.id === job.id) return
@@ -95,6 +113,24 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     const allQuestions = []
     const seenQuestions = new Set()
     
+    // Add questions from templates page
+    try {
+      const selectedTemplates = JSON.parse(localStorage.getItem('selected-templates') || '{"competencies": [], "questions": []}')
+      selectedTemplates.questions.forEach(question => {
+        const key = question.question
+        if (!seenQuestions.has(key)) {
+          seenQuestions.add(key)
+          allQuestions.push({
+            ...question,
+            fromJob: `Template: ${question.fromTemplate || 'Unknown'}`
+          })
+        }
+      })
+    } catch (error) {
+      console.error('Error loading template questions:', error)
+    }
+    
+    // Add questions from existing jobs
     jobs.forEach(jobItem => {
       // Skip current job if editing to avoid showing same questions as templates
       if (job && jobItem.id === job.id) return
@@ -184,6 +220,31 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }))
   }
 
+  // Clear selected templates
+  const clearSelectedTemplates = () => {
+    if (confirm('Are you sure you want to clear all selected templates?')) {
+      localStorage.removeItem('selected-templates')
+      alert('✅ Selected templates cleared!')
+    }
+  }
+
+  // Get selected templates count
+  const getSelectedTemplatesCount = () => {
+    try {
+      const selectedTemplates = JSON.parse(localStorage.getItem('selected-templates') || '{"competencies": [], "questions": []}')
+      return {
+        competencies: selectedTemplates.competencies.length,
+        questions: selectedTemplates.questions.length
+      }
+    } catch (error) {
+      return { competencies: 0, questions: 0 }
+    }
+  }
+
+  // Go to templates page
+  const goToTemplates = () => {
+    window.location.href = '/templates'
+  }
 
 
   const openAIModal = () => {
@@ -673,25 +734,10 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTemplateTab('competencies')
-                        setTemplateSearchQuery('')
-                        setShowTemplatesModal(true)
-                      }}
-                      disabled={isGeneratingFullSection || isGeneratingSingleQuestion}
-                      className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
-                        isGeneratingFullSection || isGeneratingSingleQuestion
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      }`}
-                      title="Use competencies and questions from your previous jobs"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Templates
-                    </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={generateCompetencies}
@@ -723,6 +769,59 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                       <Plus className="h-4 w-4" />
                       Add Competency
                     </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const templatesCount = getSelectedTemplatesCount()
+                      const hasTemplates = templatesCount.competencies > 0 || templatesCount.questions > 0
+                      
+                      return (
+                        <>
+                          {hasTemplates && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600 bg-purple-50 px-3 py-1 rounded-md">
+                              <span className="font-medium">Selected:</span>
+                              <span className="text-green-600">{templatesCount.competencies}C</span>
+                              <span className="text-purple-600">{templatesCount.questions}Q</span>
+                              <button
+                                type="button"
+                                onClick={clearSelectedTemplates}
+                                className="text-red-500 hover:text-red-700 ml-1"
+                                title="Clear selected templates"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTemplateTab('competencies')
+                              setTemplateSearchQuery('')
+                              setShowTemplatesModal(true)
+                            }}
+                            disabled={isGeneratingFullSection || isGeneratingSingleQuestion}
+                            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition-colors ${
+                              isGeneratingFullSection || isGeneratingSingleQuestion
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                            title="Use competencies and questions from your previous jobs"
+                          >
+                            <Copy className="h-4 w-4" />
+                            From Jobs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={goToTemplates}
+                            className="flex items-center gap-2 px-3 py-1 text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-md transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Templates
+                          </button>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
 
