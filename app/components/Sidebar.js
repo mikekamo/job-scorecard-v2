@@ -164,7 +164,7 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
 
   const handleDropdownItemClick = (item) => {
     router.push(item.href)
-    setExpandedDropdown(null) // Close dropdown after selection
+    // Keep dropdown open when navigating to sub-settings
   }
 
   const handleAddJob = () => {
