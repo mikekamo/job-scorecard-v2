@@ -126,8 +126,8 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
     }
     
     if (item.id === 'jobs') {
-      // Jobs is active for home page and interview pages
-      return pathname === '/' || pathname.startsWith('/interview')
+      // Jobs is active for home page, company jobs pages, and interview pages
+      return pathname === '/' || pathname.startsWith('/company/') || pathname.startsWith('/interview')
     }
     
     if (item.id === 'candidates') {
@@ -151,7 +151,14 @@ export default function Sidebar({ isCollapsed, onToggle, currentCompany }) {
     if (item.hasDropdown) {
       // Toggle dropdown instead of navigating
       setExpandedDropdown(expandedDropdown === item.id ? null : item.id)
-    } else if (item.id === 'jobs' || item.id === 'dashboard') {
+    } else if (item.id === 'jobs') {
+      // Navigate to company-specific jobs page if we have a current company
+      if (currentCompany) {
+        router.push(`/company/${currentCompany.id}`)
+      } else {
+        router.push('/')
+      }
+    } else if (item.id === 'dashboard') {
       router.push('/')
     } else if (item.id === 'candidates') {
       router.push('/candidates')

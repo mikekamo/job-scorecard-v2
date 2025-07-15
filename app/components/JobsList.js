@@ -45,25 +45,36 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
-        <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out transform h-[400px] flex flex-col">
+        <div key={job.id} className={`bg-white rounded-xl shadow-sm border ${job.isDraft ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'} hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out transform h-[400px] flex flex-col`}>
           <div className="p-6 flex-1 flex flex-col">
             {/* Job Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{job.title}</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-xl font-bold text-gray-900 line-clamp-2">{job.title}</h3>
+                  {job.isDraft && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Draft
+                    </span>
+                  )}
+                </div>
                 <p className="text-gray-600 text-sm mb-3">{job.department}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {job.jobType}
-                </span>
-                <button
-                  onClick={() => onViewScorecard(job)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  title="View Candidates"
-                >
-                  <ArrowRight className="h-5 w-5" />
-                </button>
+                {!job.isDraft && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {job.jobType}
+                  </span>
+                )}
+                {!job.isDraft && (
+                  <button
+                    onClick={() => onViewScorecard(job)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    title="View Candidates"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -75,6 +86,11 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
               {job.description && job.description.length > 120 && (
                 <p className="text-xs text-blue-600 mt-1 italic">
                   Click edit to read full description
+                </p>
+              )}
+              {job.isDraft && (
+                <p className="text-xs text-yellow-600 mt-2 italic">
+                  💡 This job is incomplete. Click "Continue Editing" to finish creating it.
                 </p>
               )}
             </div>
@@ -109,40 +125,44 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
               <button
                 onClick={() => onEditJob(job)}
                 className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"
-                title="Edit Job"
+                title={job.isDraft ? "Continue Editing" : "Edit Job"}
               >
                 <Edit className="h-5 w-5" />
               </button>
-              <button
-                onClick={() => onDuplicateJob(job)}
-                className="p-3 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-blue-200"
-                title="Duplicate Job"
-              >
-                <Copy className="h-5 w-5" />
-              </button>
-              <div className="relative">
-                <button
-                  onClick={() => handleGenerateJobInterviewLink(job)}
-                  className="p-3 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-purple-200"
-                  title="Generate Interview Link"
-                >
-                  <Video className="h-5 w-5" />
-                </button>
-                {showLinkNotification === job.id && (
-                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-bounce flex items-center gap-1">
-                    <Check className="h-3 w-3" />
-                    Link copied!
+              {!job.isDraft && (
+                <>
+                  <button
+                    onClick={() => onDuplicateJob(job)}
+                    className="p-3 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    title="Duplicate Job"
+                  >
+                    <Copy className="h-5 w-5" />
+                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => handleGenerateJobInterviewLink(job)}
+                      className="p-3 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-purple-200"
+                      title="Generate Interview Link"
+                    >
+                      <Video className="h-5 w-5" />
+                    </button>
+                    {showLinkNotification === job.id && (
+                      <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-bounce flex items-center gap-1">
+                        <Check className="h-3 w-3" />
+                        Link copied!
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
               <button
                 onClick={() => {
-                  if (window.confirm('Delete this job? This action cannot be undone.')) {
+                  if (window.confirm(`Delete this ${job.isDraft ? 'draft' : 'job'}? This action cannot be undone.`)) {
                     onDeleteJob(job.id)
                   }
                 }}
                 className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-red-200"
-                title="Delete Job"
+                title={job.isDraft ? "Delete Draft" : "Delete Job"}
               >
                 <Trash2 className="h-5 w-5" />
               </button>

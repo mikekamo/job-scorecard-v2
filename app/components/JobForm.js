@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy, X, FileText } from 'lucide-react'
 import { useJobStorage } from '../hooks/useJobStorage'
 
@@ -26,7 +26,21 @@ const QUESTION_BANK = [
 
 export default function JobForm({ job, company, onSave, onCancel }) {
   const { jobs } = useJobStorage()
-  const [currentStep, setCurrentStep] = useState(1)
+  
+  // Initialize currentStep based on job type
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (job?.isDraft) {
+      // For drafts, continue from where they left off
+      return job.currentStep || 1
+    } else if (job) {
+      // For existing complete jobs, show all steps
+      return 2
+    } else {
+      // For new jobs, start at step 1
+      return 1
+    }
+  })
+  
   const [formData, setFormData] = useState({
     title: job?.title || '',
     description: job?.description || '',
@@ -56,13 +70,59 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
   const [showQuestionUpdateModal, setShowQuestionUpdateModal] = useState(false)
   const [pendingCompetencyUpdate, setPendingCompetencyUpdate] = useState(null)
+  const [draftId, setDraftId] = useState(job?.id || null) // Track draft ID for new jobs
   const [showTemplatesModal, setShowTemplatesModal] = useState(false)
   const [activeTemplateTab, setActiveTemplateTab] = useState('competencies')
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
 
+  // Auto-save drafts when form data changes
+  useEffect(() => {
+    // Auto-save conditions:
+    // 1. For existing drafts (job?.isDraft) - save any changes
+    // 2. For new jobs - save when we have title and some description
+    const shouldAutoSave = job?.isDraft || 
+      (!job && formData.title.trim() && formData.description.trim().length >= 50)
+    
+    if (shouldAutoSave) {
+      const timeoutId = setTimeout(() => {
+        saveDraft()
+      }, 1000) // Auto-save after 1 second of inactivity
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [formData, currentStep, job?.isDraft])
 
-  // If editing existing job, show all steps
-  const isEditingJob = Boolean(job)
+  // Save draft when user navigates away
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (formData.title.trim() && formData.description.trim().length >= 50) {
+        saveDraft()
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && formData.title.trim() && formData.description.trim().length >= 50) {
+        saveDraft()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [formData.title, formData.description])
+
+  // Save draft immediately when moving to step 2
+  useEffect(() => {
+    if (currentStep === 2 && !job && formData.title.trim() && formData.description.trim().length >= 50) {
+      saveDraft()
+    }
+  }, [currentStep])
+
+  const isEditingJob = job && !job.isDraft
 
   // Get all unique competencies from all jobs (excluding current job if editing)
   const getAllCompetencies = () => {
@@ -499,9 +559,56 @@ export default function JobForm({ job, company, onSave, onCancel }) {
         return
       }
       
+      // Save as draft before proceeding to step 2
+      if (!job || job.isDraft) { // Save for new jobs or existing drafts
+        saveDraft()
+      }
+      
       // Generate competencies and questions automatically
       setCurrentStep(2)
       await generateCompetencies()
+    }
+  }
+
+  const saveDraft = () => {
+    // Generate a consistent ID for new jobs
+    const currentDraftId = draftId || `draft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
+    const draftData = {
+      ...formData,
+      id: currentDraftId,
+      companyId: company?.id,
+      isDraft: true,
+      dateCreated: job?.dateCreated || new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      currentStep: currentStep, // Save current step
+      candidates: []
+    }
+    
+    try {
+      // Get existing drafts
+      const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]')
+      
+      // Check if this draft already exists
+      const existingDraftIndex = existingDrafts.findIndex(draft => draft.id === currentDraftId)
+      
+      if (existingDraftIndex !== -1) {
+        // Update existing draft
+        existingDrafts[existingDraftIndex] = draftData
+      } else {
+        // Add new draft
+        existingDrafts.push(draftData)
+      }
+      
+      localStorage.setItem('job-drafts', JSON.stringify(existingDrafts))
+      console.log('💾 Draft saved:', draftData.title)
+      
+      // Update the draft ID if this is a new job
+      if (!draftId) {
+        setDraftId(currentDraftId)
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error)
     }
   }
 
@@ -597,8 +704,25 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     
+    // Use the draft ID if available, otherwise generate a new one
+    const finalJobId = draftId || job?.id || Date.now().toString()
+    
+    // Prepare the final job data
+    const finalJobData = {
+      ...formData,
+      id: finalJobId,
+      isDraft: false, // Mark as complete
+      lastModified: new Date().toISOString(),
+      completedAt: new Date().toISOString()
+    }
+    
+    // If this was a draft, remove it from drafts
+    if (job?.isDraft || draftId) {
+      removeDraft(finalJobId)
+    }
+    
     // Call the save function
-    onSave(formData)
+    onSave(finalJobData)
     
     // If updating an existing job, go back to the jobs list
     if (job) {
@@ -606,6 +730,16 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }
   }
 
+  const removeDraft = (idToRemove) => {
+    try {
+      const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]')
+      const updatedDrafts = existingDrafts.filter(draft => draft.id !== idToRemove)
+      localStorage.setItem('job-drafts', JSON.stringify(updatedDrafts))
+      console.log('🗑️ Draft removed:', idToRemove)
+    } catch (error) {
+      console.error('Error removing draft:', error)
+    }
+  }
 
 
   const shouldShowCompetencies = currentStep >= 2 || isEditingJob

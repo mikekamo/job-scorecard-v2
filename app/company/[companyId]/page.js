@@ -22,6 +22,31 @@ export default function CompanyJobsPage() {
 
   // Load company and jobs data
   useEffect(() => {
+    loadJobsAndDrafts()
+  }, [companyId])
+
+  // Reload jobs and drafts when page becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadJobsAndDrafts()
+      }
+    }
+
+    const handleFocus = () => {
+      loadJobsAndDrafts()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [companyId])
+
+  const loadJobsAndDrafts = () => {
     try {
       // Load company data
       const savedCompanies = localStorage.getItem('scorecard-companies')
@@ -35,17 +60,41 @@ export default function CompanyJobsPage() {
 
       // Load jobs for this company
       const savedJobs = localStorage.getItem('jobScorecards')
+      const savedDrafts = localStorage.getItem('job-drafts')
+      
+      const allJobs = []
+      
+      // Load regular jobs
       if (savedJobs) {
-        const allJobs = JSON.parse(savedJobs)
-        const companyJobs = allJobs.filter(job => job.companyId === companyId)
-        setJobs(companyJobs)
+        const jobs = JSON.parse(savedJobs)
+        const companyJobs = jobs.filter(job => job.companyId === companyId)
+        allJobs.push(...companyJobs)
       }
+      
+      // Load drafts
+      if (savedDrafts) {
+        const drafts = JSON.parse(savedDrafts)
+        const companyDrafts = drafts.filter(draft => draft.companyId === companyId)
+        allJobs.push(...companyDrafts)
+      }
+      
+      // Sort by completion status first (real jobs first, then drafts), then by date created (newest first)
+      allJobs.sort((a, b) => {
+        // First, sort by completion status: real jobs (not drafts) first
+        if (a.isDraft && !b.isDraft) return 1
+        if (!a.isDraft && b.isDraft) return -1
+        
+        // If both are the same type (both real jobs or both drafts), sort by date created (newest first)
+        return new Date(b.dateCreated) - new Date(a.dateCreated)
+      })
+      
+      setJobs(allJobs)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [companyId])
+  }
 
   // Save jobs to localStorage
   useEffect(() => {
@@ -55,18 +104,28 @@ export default function CompanyJobsPage() {
         const savedJobs = localStorage.getItem('jobScorecards')
         const allJobs = savedJobs ? JSON.parse(savedJobs) : []
         
-        // Remove old jobs for this company and add updated ones
-        const otherCompanyJobs = allJobs.filter(job => job.companyId !== companyId)
-        const updatedJobs = [...otherCompanyJobs, ...jobs]
+        // Separate real jobs from drafts
+        const realJobs = jobs.filter(job => !job.isDraft)
+        const drafts = jobs.filter(job => job.isDraft)
         
+        // Update regular jobs
+        const otherCompanyJobs = allJobs.filter(job => job.companyId !== companyId)
+        const updatedJobs = [...otherCompanyJobs, ...realJobs]
         localStorage.setItem('jobScorecards', JSON.stringify(updatedJobs))
         
-        // Update company job count
+        // Update drafts separately
+        const savedDrafts = localStorage.getItem('job-drafts')
+        const allDrafts = savedDrafts ? JSON.parse(savedDrafts) : []
+        const otherCompanyDrafts = allDrafts.filter(draft => draft.companyId !== companyId)
+        const updatedDrafts = [...otherCompanyDrafts, ...drafts]
+        localStorage.setItem('job-drafts', JSON.stringify(updatedDrafts))
+        
+        // Update company job count (only count real jobs, not drafts)
         const savedCompanies = localStorage.getItem('scorecard-companies')
         if (savedCompanies) {
           const companies = JSON.parse(savedCompanies)
           const updatedCompanies = companies.map(c => 
-            c.id === companyId ? { ...c, jobCount: jobs.length } : c
+            c.id === companyId ? { ...c, jobCount: realJobs.length } : c
           )
           localStorage.setItem('scorecard-companies', JSON.stringify(updatedCompanies))
         }
@@ -158,11 +217,13 @@ export default function CompanyJobsPage() {
 
   const addJob = (jobData) => {
     const newJob = {
-      id: Date.now().toString(),
+      id: jobData.id || Date.now().toString(), // Use existing ID if available (from draft)
       ...jobData,
       companyId: companyId, // Associate job with company
-      candidates: [],
-      dateCreated: new Date().toISOString()
+      candidates: jobData.candidates || [],
+      dateCreated: jobData.dateCreated || new Date().toISOString(),
+      isDraft: false, // Ensure it's marked as complete
+      lastModified: new Date().toISOString()
     }
     setJobs([...jobs, newJob])
     setCurrentView('jobs')
@@ -170,12 +231,20 @@ export default function CompanyJobsPage() {
 
   const updateJob = (jobId, jobData) => {
     setJobs(jobs.map(job => 
-      job.id === jobId ? { ...job, ...jobData } : job
+      job.id === jobId ? { 
+        ...job, 
+        ...jobData,
+        isDraft: false, // Ensure it's marked as complete when updated
+        lastModified: new Date().toISOString()
+      } : job
     ))
   }
 
   const deleteJob = (jobId) => {
+    // Remove from the jobs state (this handles both regular jobs and drafts in the UI)
+    // The useEffect will handle updating localStorage properly
     setJobs(jobs.filter(job => job.id !== jobId))
+    console.log('🗑️ Job/Draft deleted:', jobId)
   }
 
   const duplicateJob = (job) => {
@@ -334,16 +403,22 @@ export default function CompanyJobsPage() {
             (data) => {
               updateJob(selectedJob.id, data)
               setCurrentView('jobs')
+              // Small delay to ensure localStorage is updated before reload
+              setTimeout(() => loadJobsAndDrafts(), 100)
               router.push(`/company/${companyId}`, undefined, { shallow: true })
             } : 
             (data) => {
               addJob(data)
+              // Small delay to ensure localStorage is updated before reload
+              setTimeout(() => loadJobsAndDrafts(), 100)
               router.push(`/company/${companyId}`, undefined, { shallow: true })
             }
           }
           onCancel={() => {
             setSelectedJob(null)
             setCurrentView('jobs')
+            // Small delay to ensure localStorage is updated before reload
+            setTimeout(() => loadJobsAndDrafts(), 100)
             router.push(`/company/${companyId}`, undefined, { shallow: true })
           }}
         />
