@@ -14,7 +14,7 @@ export default function ClientLayout({ children }) {
   
   // AUTHENTICATION TEMPORARILY DISABLED - Always show header and sidebar
   // BUT exclude navigation for candidate interview pages
-  const isCandidate = pathname.startsWith('/interview/job/')
+  const isCandidate = pathname.startsWith('/interview/job/') || (pathname.startsWith('/interview/') && pathname !== '/interview')
   const showHeader = !isCandidate
   const showSidebar = !isCandidate
   // const showHeader = pathname !== '/login'

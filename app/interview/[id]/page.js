@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
+import { Video, Play, Square, Clock, CheckCircle, SkipForward, RotateCcw, Info } from 'lucide-react'
 
 export default function InterviewPage() {
   const params = useParams()
@@ -697,44 +698,19 @@ export default function InterviewPage() {
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="text-8xl mb-8">🎉</div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">Interview Complete!</h1>
-          <p className="text-xl text-gray-700 leading-relaxed mb-8">
-            Thank you <span className="font-semibold text-blue-700">{candidate.name}</span>! You've successfully completed your video interview for the <strong className="text-blue-700">{job.title}</strong> position.
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100 flex items-center justify-center px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
+            <CheckCircle className="w-14 h-14 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-6">
+            Interview Complete!
+          </h1>
+                    <p className="text-xl text-gray-700 leading-relaxed mb-8 max-w-xl mx-auto">
+            Thank you <span className="font-semibold text-green-700">{candidate.name}</span>! You've successfully completed your video interview for the <strong className="text-green-700">{job.title}</strong> position.
           </p>
           
-          {isProcessingAI ? (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200 mb-6">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-6 h-6 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <h3 className="text-lg font-semibold text-blue-900">AI Analysis in Progress</h3>
-              </div>
-              <p className="text-blue-700 text-sm">
-                🎙️ Transcribing your video responses and running AI competency analysis...
-              </p>
-              <p className="text-blue-600 text-xs mt-2">
-                This process typically takes 1-2 minutes. You can safely close this tab.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-green-50 rounded-lg p-6 shadow-sm border border-green-200 mb-6">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-green-900">AI Analysis Complete</h3>
-              </div>
-              <p className="text-green-700 text-sm">
-                ✨ Your responses have been automatically transcribed and analyzed for competency scoring.
-              </p>
-            </div>
-          )}
-          
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-lg">
             Please allow some time for us to review your interview and we will be in touch!
           </p>
         </div>
@@ -745,39 +721,45 @@ export default function InterviewPage() {
   const currentQuestion = job.interviewQuestions[currentQuestionIndex]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Video Interview</h1>
-          <p className="text-lg text-gray-600">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <Video className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+            Video Interview
+          </h1>
+          <p className="text-lg text-gray-600 mb-6">
             {job.title} • {candidate.name}
           </p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <span className="text-sm text-gray-500">
+          <div className="flex items-center justify-center gap-4">
+            <span className="text-sm font-medium text-gray-600">
               Question {currentQuestionIndex + 1} of {job.interviewQuestions.length}
             </span>
-            <div className="w-48 bg-gray-200 rounded-full h-2">
+            <div className="w-64 bg-gray-200 rounded-full h-3 shadow-inner">
               <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500 shadow-sm"
                 style={{ width: `${((currentQuestionIndex + 1) / job.interviewQuestions.length) * 100}%` }}
               />
             </div>
+            <span className="text-sm font-medium text-gray-600">
+              {Math.round(((currentQuestionIndex + 1) / job.interviewQuestions.length) * 100)}%
+            </span>
           </div>
         </div>
 
         {/* Redo Mode Alert */}
         {isRedoMode && (
-          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-orange-600">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
+          <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-orange-200">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <RotateCcw className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-medium text-orange-800">Redoing Question {currentQuestionIndex + 1}</h3>
-                <p className="text-sm text-orange-700">Your previous response will be replaced when you record a new answer.</p>
+                <h3 className="font-semibold text-orange-900 text-lg">Redoing Question {currentQuestionIndex + 1}</h3>
+                <p className="text-sm text-orange-700 mt-1">Your previous response will be replaced when you record a new answer.</p>
               </div>
             </div>
           </div>
@@ -787,16 +769,14 @@ export default function InterviewPage() {
 
         {/* Update Confirmation */}
         {justUpdatedQuestion !== null && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-green-600">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+          <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-green-200">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium text-green-800">Response Updated!</h3>
-                <p className="text-sm text-green-700">
+                <h3 className="font-semibold text-green-900 text-lg">Response Updated!</h3>
+                <p className="text-sm text-green-700 mt-1">
                   Your new response for Question {justUpdatedQuestion + 1} has been saved.
                   {previousQuestionIndex !== null && (
                     <span> Taking you back to where you were...</span>
@@ -808,11 +788,11 @@ export default function InterviewPage() {
         )}
 
         {/* Main Content - Video Left, Controls Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Video Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
+              <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl overflow-hidden relative shadow-2xl">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -821,48 +801,54 @@ export default function InterviewPage() {
                   className="w-full h-full object-cover"
                 />
                 {isRecording && (
-                  <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                  <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     REC {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                   </div>
                 )}
               </div>
-              
-              {/* Compression Info */}
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <span>Video optimized for transcription (720p MP4, H.264/AAC)</span>
-              </div>
             </div>
 
             {/* Current Question */}
-            <div className={`rounded-lg shadow-lg p-6 mt-6 ${
+            <div className={`rounded-2xl shadow-xl p-8 mt-6 border ${
               isRedoMode 
-                ? 'bg-orange-50 border-2 border-orange-200' 
-                : 'bg-white'
+                ? 'bg-orange-50/80 backdrop-blur-sm border-orange-200' 
+                : 'bg-white/80 backdrop-blur-sm border-white/20'
             }`}>
-              <h2 className={`text-xl font-semibold mb-4 ${
+              <h2 className={`text-2xl font-bold mb-6 flex items-center gap-3 ${
                 isRedoMode ? 'text-orange-900' : 'text-gray-900'
               }`}>
-                {isRedoMode ? `🔄 Redoing Question ${currentQuestionIndex + 1}` : `Question ${currentQuestionIndex + 1}`}
+                {isRedoMode ? (
+                  <>
+                    <RotateCcw className="w-6 h-6 text-orange-600" />
+                    Redoing Question {currentQuestionIndex + 1}
+                  </>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-sm font-bold text-blue-600">{currentQuestionIndex + 1}</span>
+                    </div>
+                    Question {currentQuestionIndex + 1}
+                  </>
+                )}
                 {currentQuestion.isOptional && (
-                  <span className="ml-2 text-sm font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                  <span className="ml-2 text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
                     Optional
                   </span>
                 )}
               </h2>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                 {currentQuestion.question}
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">
-                  Time limit: {Math.floor(currentQuestion.timeLimit / 60)}:{(currentQuestion.timeLimit % 60).toString().padStart(2, '0')}
-                </span>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="w-4 h-4" />
+                  <span>Time limit: {Math.floor(currentQuestion.timeLimit / 60)}:{(currentQuestion.timeLimit % 60).toString().padStart(2, '0')}</span>
+                </div>
                 {currentQuestion.isOptional && (
-                  <span className="text-sm text-blue-600 font-medium">
-                    💡 You can skip this question
+                  <span className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                    <Info className="w-4 h-4" />
+                    You can skip this question
                   </span>
                 )}
               </div>
@@ -872,17 +858,18 @@ export default function InterviewPage() {
           {/* Right Side Controls & Status */}
           <div className="space-y-6">
             {/* Recording Controls */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Video className="w-5 h-5 text-blue-600" />
                 Recording Question {currentQuestionIndex + 1}
               </h3>
               {!isRecording ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <button
                     onClick={startRecording}
-                    className="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-lg font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                    <Play className="w-5 h-5" />
                     {completedQuestions.has(currentQuestionIndex) ? 'Redo Answer' : 'Start Recording'}
                   </button>
                   
@@ -890,9 +877,9 @@ export default function InterviewPage() {
                   {currentQuestion.isOptional && (
                     <button
                       onClick={() => skipQuestion(currentQuestionIndex)}
-                      className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-700 px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
                     >
-                      <span>⏭️</span>
+                      <SkipForward className="w-5 h-5" />
                       Skip This Question
                     </button>
                   )}
@@ -900,8 +887,9 @@ export default function InterviewPage() {
               ) : (
                 <button
                   onClick={stopRecording}
-                  className="w-full bg-gray-600 hover:bg-gray-700 text-white px-6 py-4 rounded-lg font-medium"
+                  className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                 >
+                  <Square className="w-5 h-5" />
                   Stop Recording
                 </button>
               )}
@@ -909,28 +897,35 @@ export default function InterviewPage() {
 
             {/* Finish Interview Button */}
             {allQuestionsCompleted && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Interview</h3>
-                <p className="text-sm text-gray-600 mb-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  Complete Interview
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
                   You've answered all questions! Review your responses above or finish your interview.
                 </p>
                 <button
                   onClick={finishInterview}
                   disabled={isRecording}
-                  className={`w-full px-6 py-4 rounded-lg font-medium ${
+                  className={`w-full px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 ${
                     isRecording
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
                   }`}
                 >
-                  🎉 Finish Interview
+                  <CheckCircle className="w-5 h-5" />
+                  Finish Interview
                 </button>
               </div>
             )}
 
             {/* Question Status */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress</h3>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                Progress
+              </h3>
               <div className="space-y-3">
                 {job.interviewQuestions.map((question, index) => {
                   const isCompleted = recordings.some(r => r.questionIndex === index)
@@ -956,15 +951,15 @@ export default function InterviewPage() {
                             navigateToQuestion(index, false)
                           }
                         }}
-                        className={`p-3 rounded-lg border-2 transition-all ${
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                           isCurrent
-                            ? 'bg-blue-50 border-blue-400 shadow-md' 
+                            ? 'bg-blue-50 border-blue-400 shadow-lg' 
                             : isCompleted
-                              ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer'
+                              ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer hover:shadow-md'
                               : isSkipped
                                 ? 'bg-yellow-50 border-yellow-200 opacity-75'
                                 : isNextAvailable
-                                  ? 'bg-gray-50 border-gray-200 hover:bg-blue-50 cursor-pointer opacity-75'
+                                  ? 'bg-gray-50 border-gray-200 hover:bg-blue-50 cursor-pointer opacity-75 hover:shadow-md'
                                   : 'bg-gray-50 border-gray-200 opacity-50'
                         }`}
                     >
@@ -982,11 +977,11 @@ export default function InterviewPage() {
                         }`}>
                           Question {index + 1}
                         </span>
-                        <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                        <span className={`text-sm font-medium px-3 py-1 rounded-full flex items-center gap-1 ${
                           isCurrent
                             ? 'text-blue-700 bg-blue-100'
                             : isCompleted 
-                              ? 'text-gray-600 bg-gray-100'
+                              ? 'text-green-700 bg-green-100'
                               : isSkipped
                                 ? 'text-yellow-700 bg-yellow-100'
                                 : isNextAvailable
@@ -994,14 +989,29 @@ export default function InterviewPage() {
                                   : 'text-gray-400 bg-gray-100'
                         }`}>
                           {isCurrent 
-                            ? '📹 Current'
+                            ? <>
+                                <Video className="w-3 h-3" />
+                                Current
+                              </>
                             : isCompleted 
-                              ? '✅ Completed' 
+                              ? <>
+                                  <CheckCircle className="w-3 h-3" />
+                                  Completed
+                                </> 
                               : isSkipped
-                                ? '⏭️ Skipped'
+                                ? <>
+                                    <SkipForward className="w-3 h-3" />
+                                    Skipped
+                                  </>
                                 : isNextAvailable
-                                  ? '▶️ Available'
-                                  : '⏳ Pending'
+                                  ? <>
+                                      <Play className="w-3 h-3" />
+                                      Available
+                                    </>
+                                  : <>
+                                      <Clock className="w-3 h-3" />
+                                      Pending
+                                    </>
                           }
                         </span>
                       </div>
@@ -1026,7 +1036,7 @@ export default function InterviewPage() {
                             navigateToQuestion(index, true)
                           }}
                           disabled={isRecording}
-                          className={`w-full text-xs px-3 py-2 rounded font-medium transition-colors ${
+                          className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                             isRecording 
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                               : isCurrent
@@ -1035,7 +1045,8 @@ export default function InterviewPage() {
                           }`}
                           title="Redo this response"
                         >
-                          🔄 Redo Response
+                          <RotateCcw className="w-3 h-3" />
+                          Redo Response
                         </button>
                       )}
                       {isNextAvailable && (
@@ -1045,14 +1056,15 @@ export default function InterviewPage() {
                             navigateToQuestion(index, false)
                           }}
                           disabled={isRecording}
-                          className={`w-full text-xs px-3 py-2 rounded font-medium transition-colors ${
+                          className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                             isRecording 
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                               : 'bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300'
                           }`}
                           title="Continue to this question"
                         >
-                          ▶️ Continue Here
+                          <Play className="w-3 h-3" />
+                          Continue Here
                         </button>
                       )}
                     </div>

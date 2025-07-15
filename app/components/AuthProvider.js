@@ -24,7 +24,7 @@ export default function AuthProvider({ children }) {
   const publicRoutes = ['/login']
   
   // Check if current route is a candidate interview route
-  const isCandidateRoute = pathname.startsWith('/interview/job/')
+  const isCandidateRoute = pathname.startsWith('/interview/job/') || (pathname.startsWith('/interview/') && pathname !== '/interview')
 
   useEffect(() => {
     const checkAuth = () => {
