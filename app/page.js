@@ -89,6 +89,22 @@ export default function Home() {
     }))
   }
 
+  // Function to normalize website URL
+  const normalizeWebsiteUrl = (url) => {
+    if (!url) return ''
+    
+    // Remove any whitespace
+    url = url.trim()
+    
+    // If it already has a protocol, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    
+    // Add https:// if no protocol is specified
+    return `https://${url}`
+  }
+
   // Function to extract domain from URL
   const extractDomain = (url) => {
     if (!url) return null
@@ -140,13 +156,16 @@ export default function Home() {
     setIsCreatingCompany(true)
 
     try {
+      // Normalize the website URL
+      const normalizedWebsite = normalizeWebsiteUrl(formData.website)
+      
       // Fetch company logo
-      const logoUrl = await fetchCompanyLogo(formData.website)
+      const logoUrl = await fetchCompanyLogo(normalizedWebsite)
 
       const newCompany = {
         id: Date.now().toString(),
         name: formData.name,
-        website: formData.website,
+        website: normalizedWebsite,
         description: formData.description,
         logo: logoUrl,
         dateCreated: new Date().toISOString(),
@@ -160,10 +179,12 @@ export default function Home() {
     } catch (error) {
       console.error('Error creating company:', error)
       // Still create the company even if logo fetch fails
+      const normalizedWebsite = normalizeWebsiteUrl(formData.website)
+      
       const newCompany = {
         id: Date.now().toString(),
         name: formData.name,
-        website: formData.website,
+        website: normalizedWebsite,
         description: formData.description,
         logo: null,
         dateCreated: new Date().toISOString(),
@@ -222,6 +243,13 @@ export default function Home() {
     router.push(`/company/${companyId}`)
   }
 
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 120) => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength).trim() + '...'
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -260,14 +288,14 @@ export default function Home() {
                     Website
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={formData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://acme.com"
+                    placeholder="acme.com"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    We'll automatically fetch the company logo from this website
+                    Just enter the domain name - we'll automatically fetch the logo
                   </p>
                 </div>
                 <div>
@@ -323,67 +351,76 @@ export default function Home() {
             {companies.map((company) => (
               <div
                 key={company.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:scale-105 transition-all duration-300 ease-in-out transform h-[350px] flex flex-col"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
-                      {company.logo ? (
-                        <img
-                          src={company.logo}
-                          alt={`${company.name} logo`}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.target.style.display = 'none'
-                            e.target.nextSibling.style.display = 'flex'
-                          }}
-                        />
-                      ) : null}
-                      <Building2 className={`h-5 w-5 text-blue-600 ${company.logo ? 'hidden' : ''}`} />
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
+                        {company.logo ? (
+                          <img
+                            src={company.logo}
+                            alt={`${company.name} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <Building2 className={`h-5 w-5 text-blue-600 ${company.logo ? 'hidden' : ''}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{company.name}</h3>
+                        {company.website && (
+                          <p className="text-sm text-blue-600 hover:text-blue-800 transition-colors">{company.website}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{company.name}</h3>
-                      {company.website && (
-                        <p className="text-sm text-blue-600 hover:text-blue-800 transition-colors">{company.website}</p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => editCompany(company)}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"
+                        title="Edit company"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteCompany(company.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-red-200"
+                        title="Delete company"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {company.description && (
+                    <div className="mb-4 flex-1">
+                      <p className="text-gray-600 text-base leading-relaxed">{truncateText(company.description)}</p>
+                      {company.description.length > 120 && (
+                        <p className="text-xs text-blue-600 mt-1 italic">
+                          Click edit to read full description
+                        </p>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
+                  )}
+                  
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="h-4 w-4" />
+                        {company.jobCount || 0} jobs
+                      </span>
+                    </div>
                     <button
-                      onClick={() => editCompany(company)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"
-                      title="Edit company"
+                      onClick={() => goToCompanyJobs(company.id)}
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold hover:bg-blue-50 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 transform"
                     >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteCompany(company.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-red-200"
-                      title="Delete company"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      Manage Jobs
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
-                </div>
-                
-                {company.description && (
-                  <p className="text-gray-600 text-base mb-6 leading-relaxed">{company.description}</p>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Briefcase className="h-4 w-4" />
-                      {company.jobCount || 0} jobs
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => goToCompanyJobs(company.id)}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold hover:bg-blue-50 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 transform"
-                  >
-                    Manage Jobs
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
                 </div>
               </div>
             ))}

@@ -420,6 +420,13 @@ export default function TemplatesPage() {
     setNewTemplate({ name: '', description: '', category: 'job', data: {} })
   }
 
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 120) => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength).trim() + '...'
+  }
+
   const filteredTemplates = getFilteredTemplates()
 
   if (isLoading) {
@@ -543,63 +550,72 @@ export default function TemplatesPage() {
               return (
                 <div
                   key={template.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:scale-105 transition-all duration-200"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:scale-105 transition-all duration-200 h-[320px] flex flex-col"
                 >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Icon className="h-5 w-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                        <p className="text-sm text-gray-500">{categoryInfo.name}</p>
+                  <div className="p-6 flex-1 flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                          <Icon className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                          <p className="text-sm text-gray-500">{categoryInfo.name}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Description */}
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {template.description}
-                  </p>
+                    {/* Description */}
+                    <div className="mb-4 flex-1">
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {truncateText(template.description)}
+                      </p>
+                      {template.description && template.description.length > 120 && (
+                        <p className="text-xs text-purple-600 mt-1 italic">
+                          Click preview to read full description
+                        </p>
+                      )}
+                    </div>
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {template.usageCount || 0} uses
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {new Date(template.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+                    {/* Stats */}
+                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {template.usageCount || 0} uses
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {new Date(template.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => useTemplate(template)}
-                      className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                    >
-                      Use Template
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedTemplate(template)
-                        setShowPreviewModal(true)
-                      }}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Preview"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteTemplate(template.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 mt-auto">
+                      <button
+                        onClick={() => useTemplate(template)}
+                        className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      >
+                        Use Template
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedTemplate(template)
+                          setShowPreviewModal(true)
+                        }}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Preview"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteTemplate(template.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )

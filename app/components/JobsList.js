@@ -24,6 +24,14 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
       prompt(`🎥 Generic interview link for ${job.title}:\n\nCopy this link and send it to candidates:`, jobInterviewLink)
     })
   }
+
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 120) => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength).trim() + '...'
+  }
+
   if (jobs.length === 0) {
     return (
       <div className="text-center py-20">
@@ -37,8 +45,8 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
-        <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out transform">
-          <div className="p-6">
+        <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out transform h-[400px] flex flex-col">
+          <div className="p-6 flex-1 flex flex-col">
             {/* Job Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
@@ -57,6 +65,18 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
                   <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
+            </div>
+
+            {/* Job Description */}
+            <div className="mb-4 flex-1">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {truncateText(job.description)}
+              </p>
+              {job.description && job.description.length > 120 && (
+                <p className="text-xs text-blue-600 mt-1 italic">
+                  Click edit to read full description
+                </p>
+              )}
             </div>
 
             {/* Job Stats */}
@@ -85,7 +105,7 @@ export default function JobsList({ jobs, onEditJob, onDeleteJob, onViewScorecard
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center space-x-2">
+            <div className="flex justify-center space-x-2 mt-auto">
               <button
                 onClick={() => onEditJob(job)}
                 className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-gray-200"

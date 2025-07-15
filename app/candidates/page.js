@@ -318,68 +318,70 @@ export default function CandidatesPage() {
               return (
                 <div
                   key={`${candidate.jobId}-${candidate.id}`}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer h-[280px] flex flex-col"
                   onClick={() => viewCandidate(candidate)}
                 >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
-                        {candidate.email && (
-                          <p className="text-sm text-gray-500">{candidate.email}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {candidate.isNew && (
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    )}
-                  </div>
-
-                  {/* Job Info */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <Briefcase className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{candidate.jobTitle}</span>
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                      {status.label}
-                    </span>
-                    {candidate.dateAdded && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(candidate.dateAdded).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Scores */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {/* Manual Score */}
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-gray-400" />
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${getScoreColor(manualScore)}`}>
-                          {manualScore > 0 ? manualScore : '—'}
-                        </span>
+                  <div className="p-6 flex-1 flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
+                          {candidate.email && (
+                            <p className="text-sm text-gray-500">{candidate.email}</p>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* AI Score */}
-                      <div className="flex items-center gap-1">
-                        <Brain className="h-4 w-4 text-gray-400" />
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${getScoreColor(aiScore)}`}>
-                          {aiScore > 0 ? aiScore : '—'}
-                        </span>
-                      </div>
+                      {candidate.isNew && (
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      )}
                     </div>
-                    
-                    <ArrowUpRight className="h-4 w-4 text-gray-400" />
+
+                    {/* Job Info */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <Briefcase className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{candidate.jobTitle}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                        {status.label}
+                      </span>
+                      {candidate.dateAdded && (
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(candidate.dateAdded).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Scores */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex items-center gap-4">
+                        {/* Manual Score */}
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-gray-400" />
+                          <span className={`px-2 py-1 rounded text-sm font-medium ${getScoreColor(manualScore)}`}>
+                            {manualScore > 0 ? manualScore : '—'}
+                          </span>
+                        </div>
+                        
+                        {/* AI Score */}
+                        <div className="flex items-center gap-1">
+                          <Brain className="h-4 w-4 text-gray-400" />
+                          <span className={`px-2 py-1 rounded text-sm font-medium ${getScoreColor(aiScore)}`}>
+                            {aiScore > 0 ? aiScore : '—'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    </div>
                   </div>
                 </div>
               )
