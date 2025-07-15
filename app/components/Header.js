@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, ChevronDown, Settings, Plus, Menu, X } from 'lucide-react'
-// LogOut import removed - authentication temporarily disabled
+import { Building2, ChevronDown, Settings, Plus, Menu, X, LogOut, User } from 'lucide-react'
+import { useAuth } from './AuthProvider'
 
 // HireSprint Logo Component (simplified for top bar)
 const HireSprintLogo = () => (
@@ -67,6 +67,7 @@ export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuO
   const [currentCompany, setCurrentCompany] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const router = useRouter()
+  const { user, logout } = useAuth()
 
   // Load companies and current company from localStorage
   useEffect(() => {
@@ -121,19 +122,18 @@ export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuO
     setCurrentCompany(company)
     localStorage.setItem('current-company-id', company.id)
     setShowDropdown(false)
-    router.push('/')
+    router.push(`/company/${company.id}`)
   }
 
-  /* AUTHENTICATION TEMPORARILY DISABLED - handleLogout commented out
   const handleLogout = () => {
-    localStorage.removeItem('scorecard-companies')
-    localStorage.removeItem('current-company-id')
-    localStorage.removeItem('auth-token')
-    // Clear the authentication cookie
-    document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
-    router.push('/login')
+    setShowDropdown(false)
+    logout()
   }
-  */
+
+  const handleSettings = () => {
+    setShowDropdown(false)
+    router.push('/settings')
+  }
 
   const handleAddCompany = () => {
     setShowDropdown(false)
@@ -230,22 +230,22 @@ export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuO
                       <Plus className="h-4 w-4 text-gray-500 group-hover:text-green-600" />
                       <span className="text-gray-900">Add Company</span>
                     </button>
+
                     <button
-                      onClick={() => setShowDropdown(false)}
+                      onClick={handleSettings}
                       className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:bg-gray-50"
                     >
                       <Settings className="h-4 w-4 text-gray-500" />
                       <span className="text-gray-900">Settings</span>
                     </button>
-                    {/* AUTHENTICATION TEMPORARILY DISABLED - Logout button commented out
+
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left"
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-red-700 transition-all duration-200 text-left focus:outline-none focus:bg-red-50"
                     >
-                      <LogOut className="h-4 w-4 text-gray-500" />
+                      <LogOut className="h-4 w-4 text-gray-500 group-hover:text-red-600" />
                       <span className="text-gray-900">Logout</span>
                     </button>
-                    */}
                   </div>
                 </div>
               </div>

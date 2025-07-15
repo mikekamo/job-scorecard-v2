@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '../components/AuthProvider'
 import { 
   Settings, 
   User, 
@@ -20,12 +21,37 @@ import {
   CreditCard,
   Database,
   Zap,
-  Plus
+  Plus,
+  Mail,
+  Smartphone,
+  Monitor,
+  Calendar,
+  Volume2,
+  VolumeX,
+  Moon,
+  Sun,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Info,
+  FileText,
+  Lock,
+  Users,
+  HardDrive,
+  Archive,
+  Upload,
+  RefreshCw,
+  Key,
+  Activity,
+  Cookie,
+  Fingerprint,
+  Timer
 } from 'lucide-react'
 
 export default function SettingsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user, updateUser } = useAuth()
   const [currentCompany, setCurrentCompany] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -82,6 +108,90 @@ export default function SettingsPage() {
     description: '',
     manager: ''
   })
+
+  // Notifications state
+  const [notificationsForm, setNotificationsForm] = useState({
+    // Email Notifications
+    emailEnabled: true,
+    jobApplications: true,
+    interviewScheduled: true,
+    interviewReminders: true,
+    candidateUpdates: true,
+    teamUpdates: true,
+    systemUpdates: true,
+    marketingEmails: false,
+    
+    // Push Notifications
+    pushEnabled: true,
+    pushJobApplications: true,
+    pushInterviewReminders: true,
+    pushTeamUpdates: true,
+    pushSystemAlerts: true,
+    
+    // In-App Notifications
+    inAppEnabled: true,
+    inAppJobApplications: true,
+    inAppInterviewReminders: true,
+    inAppTeamUpdates: true,
+    inAppSystemAlerts: true,
+    
+    // Digest Settings
+    dailyDigest: false,
+    weeklyDigest: true,
+    monthlyDigest: false,
+    digestDay: 'monday',
+    digestTime: '09:00',
+    
+    // Alert Settings
+    criticalAlerts: true,
+    performanceAlerts: true,
+    securityAlerts: true,
+    maintenanceAlerts: true,
+    
+    // Quiet Hours
+    quietHoursEnabled: true,
+    quietHoursStart: '22:00',
+    quietHoursEnd: '08:00',
+    weekendQuietHours: true
+  })
+
+  // Data & Privacy state
+  const [dataPrivacyForm, setDataPrivacyForm] = useState({
+    // Data Export
+    exportFormat: 'json',
+    includePersonalData: true,
+    includeJobData: true,
+    includeCandidateData: true,
+    includeInterviewData: true,
+    
+    // Privacy Controls
+    profileVisibility: 'private',
+    activityTracking: true,
+    analyticsOptIn: true,
+    marketingOptIn: false,
+    thirdPartySharing: false,
+    
+    // Data Retention
+    retentionPeriod: '2-years',
+    autoDelete: false,
+    candidateDataRetention: '1-year',
+    
+    // Security
+    twoFactorAuth: false,
+    loginAlerts: true,
+    passwordExpiry: 'never',
+    
+    // GDPR/Privacy Rights
+    dataProcessingConsent: true,
+    cookieConsent: true,
+    rightToBeForgotten: false,
+    dataPortability: true
+  })
+
+  // Data export state
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState(0)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const settingsSections = [
     {
@@ -211,18 +321,40 @@ export default function SettingsPage() {
           }
         }
 
-        // Load user settings (for now, use mock data)
+        // Load user settings from authenticated user
+        if (user) {
+          setAccountForm(prev => ({
+            ...prev,
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || ''
+          }))
+        }
+        
+        // Load additional settings from localStorage
         const savedSettings = localStorage.getItem('user-settings')
         if (savedSettings) {
           const settings = JSON.parse(savedSettings)
           setAccountForm(prev => ({ ...prev, ...settings }))
-        } else {
-          // Set default values
-          setAccountForm(prev => ({
+        }
+
+        // Load notifications settings
+        const savedNotifications = localStorage.getItem('notifications-settings')
+        if (savedNotifications) {
+          const notificationSettings = JSON.parse(savedNotifications)
+          setNotificationsForm(prev => ({
             ...prev,
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john.doe@example.com'
+            ...notificationSettings
+          }))
+        }
+
+        // Load data & privacy settings
+        const savedDataPrivacy = localStorage.getItem('data-privacy-settings')
+        if (savedDataPrivacy) {
+          const dataPrivacySettings = JSON.parse(savedDataPrivacy)
+          setDataPrivacyForm(prev => ({
+            ...prev,
+            ...dataPrivacySettings
           }))
         }
 
@@ -304,6 +436,15 @@ export default function SettingsPage() {
       // Save to localStorage (in a real app, this would be an API call)
       localStorage.setItem('user-settings', JSON.stringify(accountForm))
 
+      // Update user information in AuthProvider
+      if (user) {
+        updateUser({
+          firstName: accountForm.firstName,
+          lastName: accountForm.lastName,
+          email: accountForm.email
+        })
+      }
+
       // Clear password fields after successful save
       setAccountForm(prev => ({
         ...prev,
@@ -327,6 +468,193 @@ export default function SettingsPage() {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleNotificationsFormChange = (field, value) => {
+    setNotificationsForm(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleDataPrivacyFormChange = (field, value) => {
+    setDataPrivacyForm(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleSaveNotifications = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      // Save notifications settings to localStorage
+      localStorage.setItem('notifications-settings', JSON.stringify(notificationsForm))
+      
+      setSaveMessage('✅ Notifications settings saved successfully!')
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage('')
+      }, 3000)
+    } catch (error) {
+      console.error('Error saving notifications settings:', error)
+      setSaveMessage('❌ Failed to save notifications settings. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveDataPrivacy = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      // Save data & privacy settings to localStorage
+      localStorage.setItem('data-privacy-settings', JSON.stringify(dataPrivacyForm))
+      
+      setSaveMessage('✅ Data & Privacy settings saved successfully!')
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage('')
+      }, 3000)
+    } catch (error) {
+      console.error('Error saving data & privacy settings:', error)
+      setSaveMessage('❌ Failed to save data & privacy settings. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleFullDataExport = async () => {
+    setIsExporting(true)
+    setExportProgress(0)
+    
+    try {
+      // Simulate export progress
+      const intervals = [20, 40, 60, 80, 100]
+      for (const progress of intervals) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setExportProgress(progress)
+      }
+      
+      // Collect all data
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        user: {
+          firstName: accountForm.firstName,
+          lastName: accountForm.lastName,
+          email: accountForm.email,
+          timezone: accountForm.timezone,
+          language: accountForm.language,
+          dateFormat: accountForm.dateFormat
+        },
+        company: currentCompany,
+        jobs: JSON.parse(localStorage.getItem('scorecard-companies') || '[]'),
+        teamMembers: JSON.parse(localStorage.getItem('team-members') || '[]'),
+        notifications: JSON.parse(localStorage.getItem('notifications-settings') || '{}'),
+        dataPrivacy: JSON.parse(localStorage.getItem('data-privacy-settings') || '{}')
+      }
+      
+      // Filter data based on user selections
+      const filteredData = {}
+      if (dataPrivacyForm.includePersonalData) filteredData.user = exportData.user
+      if (dataPrivacyForm.includeJobData) filteredData.jobs = exportData.jobs
+      if (dataPrivacyForm.includeCandidateData) filteredData.teamMembers = exportData.teamMembers
+      if (dataPrivacyForm.includeInterviewData) filteredData.notifications = exportData.notifications
+      
+      // Add metadata
+      filteredData.metadata = {
+        exportDate: exportData.timestamp,
+        format: dataPrivacyForm.exportFormat,
+        version: '1.0.0'
+      }
+      
+      // Create and download file
+      const filename = `hiresprint-data-export-${new Date().toISOString().split('T')[0]}.${dataPrivacyForm.exportFormat}`
+      const dataStr = dataPrivacyForm.exportFormat === 'json' 
+        ? JSON.stringify(filteredData, null, 2)
+        : convertToCSV(filteredData)
+      
+      const dataBlob = new Blob([dataStr], { type: 'application/octet-stream' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+      
+      setSaveMessage('✅ Data export completed successfully!')
+      setTimeout(() => setSaveMessage(''), 3000)
+      
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      setSaveMessage('❌ Failed to export data. Please try again.')
+    } finally {
+      setIsExporting(false)
+      setExportProgress(0)
+    }
+  }
+
+  const convertToCSV = (data) => {
+    // Simple CSV conversion for demo purposes
+    const rows = []
+    rows.push(['Type', 'Data'])
+    
+    if (data.user) {
+      rows.push(['User', JSON.stringify(data.user)])
+    }
+    if (data.jobs) {
+      rows.push(['Jobs', JSON.stringify(data.jobs)])
+    }
+    if (data.teamMembers) {
+      rows.push(['Team Members', JSON.stringify(data.teamMembers)])
+    }
+    
+    return rows.map(row => row.join(',')).join('\n')
+  }
+
+  const handleDeleteAllData = async () => {
+    try {
+      // Clear all localStorage data
+      const keysToDelete = [
+        'scorecard-companies',
+        'current-company-id',
+        'user-settings',
+        'team-members',
+        'notifications-settings',
+        'data-privacy-settings'
+      ]
+      
+      keysToDelete.forEach(key => localStorage.removeItem(key))
+      
+      setSaveMessage('✅ All data has been permanently deleted!')
+      setShowDeleteConfirm(false)
+      
+      // Reset forms to default
+      setAccountForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        timezone: 'America/New_York',
+        language: 'en',
+        dateFormat: 'MM/DD/YYYY',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        emailNotifications: true,
+        pushNotifications: true,
+        weeklyDigest: true
+      })
+      
+      setTimeout(() => setSaveMessage(''), 3000)
+      
+    } catch (error) {
+      console.error('Error deleting data:', error)
+      setSaveMessage('❌ Failed to delete data. Please try again.')
+    }
   }
 
   const handleSaveCompany = async () => {
@@ -1086,9 +1414,610 @@ export default function SettingsPage() {
           )}
 
           {/* Notifications & Alerts */}
-          {activeSection === 'notifications' && renderPlaceholderSection(
-            'Notifications & Alerts',
-            'Manage your notification preferences and alert settings.'
+          {activeSection === 'notifications' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              {/* Save Message */}
+              {saveMessage && (
+                <div className={`mb-6 p-4 rounded-lg ${
+                  saveMessage.includes('success') 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {saveMessage}
+                </div>
+              )}
+
+              <div className="space-y-8">
+                {/* Email Notifications */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-blue-600" />
+                    Email Notifications
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Master Email Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">Email Notifications</p>
+                        <p className="text-sm text-gray-500">Enable or disable all email notifications</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.emailEnabled}
+                          onChange={(e) => handleNotificationsFormChange('emailEnabled', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Individual Email Settings */}
+                    {notificationsForm.emailEnabled && (
+                      <div className="grid grid-cols-1 gap-4 ml-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Job Applications</p>
+                            <p className="text-sm text-gray-500">When new applications are received</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.jobApplications}
+                              onChange={(e) => handleNotificationsFormChange('jobApplications', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Interview Scheduled</p>
+                            <p className="text-sm text-gray-500">When interviews are scheduled or rescheduled</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.interviewScheduled}
+                              onChange={(e) => handleNotificationsFormChange('interviewScheduled', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Interview Reminders</p>
+                            <p className="text-sm text-gray-500">Reminders before upcoming interviews</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.interviewReminders}
+                              onChange={(e) => handleNotificationsFormChange('interviewReminders', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Candidate Updates</p>
+                            <p className="text-sm text-gray-500">When candidates complete assessments or interviews</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.candidateUpdates}
+                              onChange={(e) => handleNotificationsFormChange('candidateUpdates', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Team Updates</p>
+                            <p className="text-sm text-gray-500">When team members are added or removed</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.teamUpdates}
+                              onChange={(e) => handleNotificationsFormChange('teamUpdates', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">System Updates</p>
+                            <p className="text-sm text-gray-500">Important system updates and announcements</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.systemUpdates}
+                              onChange={(e) => handleNotificationsFormChange('systemUpdates', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Marketing Emails</p>
+                            <p className="text-sm text-gray-500">Product updates and promotional content</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.marketingEmails}
+                              onChange={(e) => handleNotificationsFormChange('marketingEmails', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Push Notifications */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Smartphone className="h-5 w-5 text-green-600" />
+                    Push Notifications
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Master Push Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">Push Notifications</p>
+                        <p className="text-sm text-gray-500">Enable or disable all push notifications</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.pushEnabled}
+                          onChange={(e) => handleNotificationsFormChange('pushEnabled', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Individual Push Settings */}
+                    {notificationsForm.pushEnabled && (
+                      <div className="grid grid-cols-1 gap-4 ml-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Job Applications</p>
+                            <p className="text-sm text-gray-500">Instant notifications for new applications</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.pushJobApplications}
+                              onChange={(e) => handleNotificationsFormChange('pushJobApplications', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Interview Reminders</p>
+                            <p className="text-sm text-gray-500">Reminders 30 minutes before interviews</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.pushInterviewReminders}
+                              onChange={(e) => handleNotificationsFormChange('pushInterviewReminders', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Team Updates</p>
+                            <p className="text-sm text-gray-500">Important team notifications</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.pushTeamUpdates}
+                              onChange={(e) => handleNotificationsFormChange('pushTeamUpdates', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">System Alerts</p>
+                            <p className="text-sm text-gray-500">Critical system notifications</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.pushSystemAlerts}
+                              onChange={(e) => handleNotificationsFormChange('pushSystemAlerts', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* In-App Notifications */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Monitor className="h-5 w-5 text-purple-600" />
+                    In-App Notifications
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Master In-App Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">In-App Notifications</p>
+                        <p className="text-sm text-gray-500">Show notifications within the application</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.inAppEnabled}
+                          onChange={(e) => handleNotificationsFormChange('inAppEnabled', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Individual In-App Settings */}
+                    {notificationsForm.inAppEnabled && (
+                      <div className="grid grid-cols-1 gap-4 ml-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Job Applications</p>
+                            <p className="text-sm text-gray-500">Show banner notifications for new applications</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.inAppJobApplications}
+                              onChange={(e) => handleNotificationsFormChange('inAppJobApplications', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Interview Reminders</p>
+                            <p className="text-sm text-gray-500">Show reminders in the application</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.inAppInterviewReminders}
+                              onChange={(e) => handleNotificationsFormChange('inAppInterviewReminders', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Team Updates</p>
+                            <p className="text-sm text-gray-500">Show team notifications in the app</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.inAppTeamUpdates}
+                              onChange={(e) => handleNotificationsFormChange('inAppTeamUpdates', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">System Alerts</p>
+                            <p className="text-sm text-gray-500">Show system notifications</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.inAppSystemAlerts}
+                              onChange={(e) => handleNotificationsFormChange('inAppSystemAlerts', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Digest Settings */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-orange-600" />
+                    Email Digests
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Daily Digest</p>
+                          <p className="text-sm text-gray-500">Daily summary email</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notificationsForm.dailyDigest}
+                            onChange={(e) => handleNotificationsFormChange('dailyDigest', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Weekly Digest</p>
+                          <p className="text-sm text-gray-500">Weekly summary email</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notificationsForm.weeklyDigest}
+                            onChange={(e) => handleNotificationsFormChange('weeklyDigest', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Monthly Digest</p>
+                          <p className="text-sm text-gray-500">Monthly summary email</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notificationsForm.monthlyDigest}
+                            onChange={(e) => handleNotificationsFormChange('monthlyDigest', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Digest Timing */}
+                    {(notificationsForm.dailyDigest || notificationsForm.weeklyDigest || notificationsForm.monthlyDigest) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Digest Day (for weekly/monthly)
+                          </label>
+                          <select
+                            value={notificationsForm.digestDay}
+                            onChange={(e) => handleNotificationsFormChange('digestDay', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Digest Time
+                          </label>
+                          <select
+                            value={notificationsForm.digestTime}
+                            onChange={(e) => handleNotificationsFormChange('digestTime', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="06:00">6:00 AM</option>
+                            <option value="07:00">7:00 AM</option>
+                            <option value="08:00">8:00 AM</option>
+                            <option value="09:00">9:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="13:00">1:00 PM</option>
+                            <option value="14:00">2:00 PM</option>
+                            <option value="15:00">3:00 PM</option>
+                            <option value="16:00">4:00 PM</option>
+                            <option value="17:00">5:00 PM</option>
+                            <option value="18:00">6:00 PM</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Alert Settings */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    Alert Settings
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">Critical Alerts</p>
+                          <p className="text-sm text-gray-500">System failures and urgent issues</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.criticalAlerts}
+                          onChange={(e) => handleNotificationsFormChange('criticalAlerts', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">Performance Alerts</p>
+                          <p className="text-sm text-gray-500">Performance issues and warnings</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.performanceAlerts}
+                          onChange={(e) => handleNotificationsFormChange('performanceAlerts', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">Security Alerts</p>
+                          <p className="text-sm text-gray-500">Security-related notifications</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.securityAlerts}
+                          onChange={(e) => handleNotificationsFormChange('securityAlerts', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Info className="h-5 w-5 text-gray-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">Maintenance Alerts</p>
+                          <p className="text-sm text-gray-500">Scheduled maintenance notifications</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.maintenanceAlerts}
+                          onChange={(e) => handleNotificationsFormChange('maintenanceAlerts', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quiet Hours */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Moon className="h-5 w-5 text-indigo-600" />
+                    Quiet Hours
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">Enable Quiet Hours</p>
+                        <p className="text-sm text-gray-500">Disable non-critical notifications during specified hours</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notificationsForm.quietHoursEnabled}
+                          onChange={(e) => handleNotificationsFormChange('quietHoursEnabled', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {notificationsForm.quietHoursEnabled && (
+                      <div className="ml-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Quiet Hours Start
+                            </label>
+                            <input
+                              type="time"
+                              value={notificationsForm.quietHoursStart}
+                              onChange={(e) => handleNotificationsFormChange('quietHoursStart', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Quiet Hours End
+                            </label>
+                            <input
+                              type="time"
+                              value={notificationsForm.quietHoursEnd}
+                              onChange={(e) => handleNotificationsFormChange('quietHoursEnd', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">Weekend Quiet Hours</p>
+                            <p className="text-sm text-gray-500">Apply quiet hours to weekends as well</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationsForm.weekendQuietHours}
+                              onChange={(e) => handleNotificationsFormChange('weekendQuietHours', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <button
+                    onClick={handleSaveNotifications}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
           {activeSection === 'integrations' && renderPlaceholderSection(
             'Integrations & API',
@@ -1098,9 +2027,497 @@ export default function SettingsPage() {
             'Billing & Subscription',
             'Manage your subscription plan and payment methods.'
           )}
-          {activeSection === 'data' && renderPlaceholderSection(
-            'Data & Privacy',
-            'Control your data export, backup, and privacy settings.'
+          {activeSection === 'data' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              {/* Save Message */}
+              {saveMessage && (
+                <div className={`mb-6 p-4 rounded-lg ${
+                  saveMessage.includes('success') 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {saveMessage}
+                </div>
+              )}
+
+              <div className="space-y-8">
+                {/* Data Export */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Download className="h-5 w-5 text-blue-600" />
+                    Data Export
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-3">Export Your Data</h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Download all your data in a structured format. This includes your personal information, 
+                        job data, candidate information, and settings.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Export Format
+                            </label>
+                            <select
+                              value={dataPrivacyForm.exportFormat}
+                              onChange={(e) => handleDataPrivacyFormChange('exportFormat', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="json">JSON Format</option>
+                              <option value="csv">CSV Format</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-3">
+                            Data to Include
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">Personal Data</p>
+                                <p className="text-sm text-gray-500">Your profile and account information</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={dataPrivacyForm.includePersonalData}
+                                  onChange={(e) => handleDataPrivacyFormChange('includePersonalData', e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">Job Data</p>
+                                <p className="text-sm text-gray-500">Job postings and requirements</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={dataPrivacyForm.includeJobData}
+                                  onChange={(e) => handleDataPrivacyFormChange('includeJobData', e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">Candidate Data</p>
+                                <p className="text-sm text-gray-500">Candidate profiles and assessments</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={dataPrivacyForm.includeCandidateData}
+                                  onChange={(e) => handleDataPrivacyFormChange('includeCandidateData', e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">Interview Data</p>
+                                <p className="text-sm text-gray-500">Interview recordings and feedback</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={dataPrivacyForm.includeInterviewData}
+                                  onChange={(e) => handleDataPrivacyFormChange('includeInterviewData', e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-4">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-gray-500" />
+                            <span className="text-sm text-gray-600">
+                              Data will be exported in {dataPrivacyForm.exportFormat.toUpperCase()} format
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleFullDataExport}
+                            disabled={isExporting}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
+                          >
+                            {isExporting ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Exporting... {exportProgress}%
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4" />
+                                Export Data
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        
+                        {isExporting && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${exportProgress}%` }}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Privacy Controls */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-green-600" />
+                    Privacy Controls
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Profile Visibility</p>
+                          <p className="text-sm text-gray-500">Control who can see your profile</p>
+                        </div>
+                        <select
+                          value={dataPrivacyForm.profileVisibility}
+                          onChange={(e) => handleDataPrivacyFormChange('profileVisibility', e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="private">Private</option>
+                          <option value="team">Team Only</option>
+                          <option value="public">Public</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Activity Tracking</p>
+                          <p className="text-sm text-gray-500">Track your activity for analytics</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.activityTracking}
+                            onChange={(e) => handleDataPrivacyFormChange('activityTracking', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Analytics Opt-in</p>
+                          <p className="text-sm text-gray-500">Help improve our service with usage data</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.analyticsOptIn}
+                            onChange={(e) => handleDataPrivacyFormChange('analyticsOptIn', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Third-party Sharing</p>
+                          <p className="text-sm text-gray-500">Share data with integrated services</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.thirdPartySharing}
+                            onChange={(e) => handleDataPrivacyFormChange('thirdPartySharing', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Retention */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-orange-600" />
+                    Data Retention
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          General Data Retention
+                        </label>
+                        <select
+                          value={dataPrivacyForm.retentionPeriod}
+                          onChange={(e) => handleDataPrivacyFormChange('retentionPeriod', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="6-months">6 Months</option>
+                          <option value="1-year">1 Year</option>
+                          <option value="2-years">2 Years</option>
+                          <option value="5-years">5 Years</option>
+                          <option value="indefinite">Indefinite</option>
+                        </select>
+                      </div>
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Candidate Data Retention
+                        </label>
+                        <select
+                          value={dataPrivacyForm.candidateDataRetention}
+                          onChange={(e) => handleDataPrivacyFormChange('candidateDataRetention', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="6-months">6 Months</option>
+                          <option value="1-year">1 Year</option>
+                          <option value="2-years">2 Years</option>
+                          <option value="3-years">3 Years</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">Auto-delete Old Data</p>
+                        <p className="text-sm text-gray-500">Automatically delete data after retention period</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={dataPrivacyForm.autoDelete}
+                          onChange={(e) => handleDataPrivacyFormChange('autoDelete', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Settings */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-red-600" />
+                    Security Settings
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Key className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+                            <p className="text-sm text-gray-500">Add extra security to your account</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.twoFactorAuth}
+                            onChange={(e) => handleDataPrivacyFormChange('twoFactorAuth', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Activity className="h-5 w-5 text-green-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">Login Alerts</p>
+                            <p className="text-sm text-gray-500">Get notified of suspicious logins</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.loginAlerts}
+                            onChange={(e) => handleDataPrivacyFormChange('loginAlerts', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password Expiry
+                      </label>
+                      <select
+                        value={dataPrivacyForm.passwordExpiry}
+                        onChange={(e) => handleDataPrivacyFormChange('passwordExpiry', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="never">Never</option>
+                        <option value="3-months">3 Months</option>
+                        <option value="6-months">6 Months</option>
+                        <option value="1-year">1 Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* GDPR & Privacy Rights */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5 text-purple-600" />
+                    GDPR & Privacy Rights
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">Data Processing Consent</p>
+                            <p className="text-sm text-gray-500">Consent to process your data</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.dataProcessingConsent}
+                            onChange={(e) => handleDataPrivacyFormChange('dataProcessingConsent', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Cookie className="h-5 w-5 text-yellow-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">Cookie Consent</p>
+                            <p className="text-sm text-gray-500">Allow cookies for better experience</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.cookieConsent}
+                            onChange={(e) => handleDataPrivacyFormChange('cookieConsent', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Upload className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">Data Portability</p>
+                            <p className="text-sm text-gray-500">Right to export your data</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dataPrivacyForm.dataPortability}
+                            onChange={(e) => handleDataPrivacyFormChange('dataPortability', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-medium text-red-900 mb-4 flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    Danger Zone
+                  </h3>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-red-900">Delete All Data</p>
+                        <p className="text-sm text-red-700">
+                          Permanently delete all your data. This action cannot be undone.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete All Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <button
+                    onClick={handleSaveDataPrivacy}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex items-center gap-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <h3 className="text-lg font-medium text-red-900">Delete All Data</h3>
+                </div>
+                <p className="text-gray-700 mb-6">
+                  Are you sure you want to permanently delete all your data? This includes:
+                </p>
+                <ul className="text-sm text-gray-600 mb-6 space-y-1">
+                  <li>• Personal profile information</li>
+                  <li>• All job postings and requirements</li>
+                  <li>• Candidate profiles and assessments</li>
+                  <li>• Interview recordings and feedback</li>
+                  <li>• Team member data</li>
+                  <li>• Settings and preferences</li>
+                </ul>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                  <p className="text-sm text-red-700 font-medium">
+                    ⚠️ This action is irreversible and cannot be undone.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAllData}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  >
+                    Delete All Data
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
