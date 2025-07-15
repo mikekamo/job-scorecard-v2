@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy, X, FileText } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, Loader2, ChevronRight, Copy, X, FileText, GripVertical } from 'lucide-react'
 import { useJobStorage } from '../hooks/useJobStorage'
+import Sortable from 'sortablejs'
 
 // Question bank templates
 const QUESTION_BANK = [
@@ -74,6 +75,63 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showTemplatesModal, setShowTemplatesModal] = useState(false)
   const [activeTemplateTab, setActiveTemplateTab] = useState('competencies')
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
+  const competenciesRef = useRef(null)
+
+  // Initialize SortableJS for drag and drop
+  useEffect(() => {
+    if (competenciesRef.current && !isGeneratingFullSection) {
+      const sortable = Sortable.create(competenciesRef.current, {
+        animation: 150,
+        handle: '.drag-handle',
+        draggable: '.competency-card',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        scroll: true,
+        scrollSensitivity: 60,
+        scrollSpeed: 20,
+        bubbleScroll: true,
+        forceAutoScrollFallback: true,
+        onStart: (evt) => {
+          // Add dragging class to container
+          competenciesRef.current.classList.add('is-dragging')
+        },
+        onEnd: (evt) => {
+          // Remove dragging class from container
+          competenciesRef.current.classList.remove('is-dragging')
+          
+          const { oldIndex, newIndex } = evt
+          if (oldIndex !== newIndex) {
+            setFormData(prev => {
+              const newCompetencies = [...prev.competencies]
+              const [movedItem] = newCompetencies.splice(oldIndex, 1)
+              newCompetencies.splice(newIndex, 0, movedItem)
+              
+              // Reorder questions to match competency order
+              const newQuestions = newCompetencies.map(comp => {
+                return prev.interviewQuestions.find(q => q.competencyId === comp.id) || 
+                       prev.interviewQuestions.find((q, idx) => idx === prev.competencies.findIndex(c => c.id === comp.id))
+              }).filter(Boolean)
+              
+              // Add any questions that don't have matching competencies at the end
+              const mappedQuestionIds = new Set(newQuestions.map(q => q.id))
+              const unmappedQuestions = prev.interviewQuestions.filter(q => !mappedQuestionIds.has(q.id))
+              
+              return {
+                ...prev,
+                competencies: newCompetencies,
+                interviewQuestions: [...newQuestions, ...unmappedQuestions]
+              }
+            })
+          }
+        }
+      })
+
+      return () => {
+        sortable.destroy()
+      }
+    }
+  }, [formData.competencies.length, isGeneratingFullSection])
 
   // Auto-save drafts when form data changes
   useEffect(() => {
@@ -975,16 +1033,19 @@ export default function JobForm({ job, company, onSave, onCancel }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div ref={competenciesRef} className="space-y-6">
                     {formData.competencies.map((competency, index) => {
                     // Find the associated interview question for this competency
                     const associatedQuestion = formData.interviewQuestions.find(q => q.competencyId === competency.id) || 
                                              formData.interviewQuestions[index] // Fallback to index-based matching
                     
                     return (
-                      <div key={competency.id} className="border border-gray-200 rounded-lg p-6 bg-white">
+                      <div key={competency.id} data-id={competency.id} className="competency-card border border-gray-200 rounded-lg p-6 bg-white">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
+                            <div className="drag-handle cursor-move p-1 hover:bg-gray-100 rounded transition-colors" title="Drag to reorder">
+                              <GripVertical className="h-4 w-4 text-gray-400" />
+                            </div>
                             <span className="text-sm font-semibold text-white bg-green-600 w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
                               {index + 1}
                             </span>

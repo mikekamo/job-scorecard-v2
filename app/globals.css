@@ -37,3 +37,38 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 } 
+
+/* SortableJS drag and drop styles */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f3f4f6 !important;
+  border: 2px dashed #9ca3af !important;
+}
+
+.sortable-chosen {
+  cursor: grabbing !important;
+  transform: rotate(3deg);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.sortable-drag {
+  opacity: 0.8;
+  transform: rotate(3deg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.is-dragging .competency-card:not(.sortable-chosen) {
+  transition: transform 0.2s ease;
+}
+
+.is-dragging .competency-card:not(.sortable-chosen):hover {
+  transform: translateY(-2px);
+}
+
+.drag-handle:hover {
+  background: #e5e7eb;
+}
+
+.drag-handle:active {
+  background: #d1d5db;
+}
