@@ -2,74 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit, Trash2, Users, Briefcase, Building2, ArrowRight, ChevronDown, Settings, LogOut } from 'lucide-react'
-
-// HireSprint Logo Component
-const HireSprintLogo = () => (
-  <div className="relative flex items-center">
-    {/* Target/Bullseye Icon */}
-    <svg width="40" height="40" viewBox="0 0 40 40" className="drop-shadow-sm mr-3">
-      {/* Outer circle */}
-      <circle 
-        cx="20" 
-        cy="20" 
-        r="18" 
-        fill="none" 
-        stroke="#1f2937" 
-        strokeWidth="2"
-      />
-      
-      {/* Middle circle */}
-      <circle 
-        cx="20" 
-        cy="20" 
-        r="12" 
-        fill="none" 
-        stroke="#1f2937" 
-        strokeWidth="2"
-      />
-      
-      {/* Inner circle */}
-      <circle 
-        cx="20" 
-        cy="20" 
-        r="6" 
-        fill="none" 
-        stroke="#1f2937" 
-        strokeWidth="2"
-      />
-      
-      {/* Center dot */}
-      <circle 
-        cx="20" 
-        cy="20" 
-        r="2" 
-        fill="#1f2937"
-      />
-      
-      {/* Crosshairs */}
-      <line x1="20" y1="2" x2="20" y2="8" stroke="#1f2937" strokeWidth="2" />
-      <line x1="20" y1="32" x2="20" y2="38" stroke="#1f2937" strokeWidth="2" />
-      <line x1="2" y1="20" x2="8" y2="20" stroke="#1f2937" strokeWidth="2" />
-      <line x1="32" y1="20" x2="38" y2="20" stroke="#1f2937" strokeWidth="2" />
-    </svg>
-    
-    {/* HireSprint Text */}
-    <div className="text-2xl font-bold text-gray-900 tracking-tight">
-      hiresprint
-    </div>
-    
-    {/* Subtle animation */}
-    <style jsx>{`
-      svg {
-        transition: transform 0.2s ease;
-      }
-      .relative:hover svg {
-        transform: scale(1.05);
-      }
-    `}</style>
-  </div>
-)
+import { Building2, Plus, Edit, Trash2, ExternalLink, Globe, Briefcase, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const router = useRouter()
@@ -82,6 +15,7 @@ export default function Home() {
     description: ''
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [isCreatingCompany, setIsCreatingCompany] = useState(false)
 
   // Load companies from localStorage
   useEffect(() => {
@@ -155,23 +89,94 @@ export default function Home() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  // Function to extract domain from URL
+  const extractDomain = (url) => {
+    if (!url) return null
+    try {
+      // Add https:// if no protocol is specified
+      const normalizedUrl = url.startsWith('http') ? url : `https://${url}`
+      const domain = new URL(normalizedUrl).hostname
+      return domain.replace(/^www\./, '') // Remove www. prefix
+    } catch (error) {
+      console.error('Error extracting domain:', error)
+      return null
+    }
+  }
+
+  // Function to fetch company logo
+  const fetchCompanyLogo = async (website) => {
+    if (!website) return null
+    
+    const domain = extractDomain(website)
+    if (!domain) return null
+
+    // Try multiple logo sources in order of preference
+    const logoSources = [
+      `https://logo.clearbit.com/${domain}?size=64`,
+      `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+      `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+      `https://www.faviconextractor.com/favicon/${domain}`,
+      `https://favicon.io/favicon-converter/?url=${domain}`
+    ]
+
+    for (const logoUrl of logoSources) {
+      try {
+        const response = await fetch(logoUrl, { method: 'HEAD' })
+        if (response.ok) {
+          return logoUrl
+        }
+      } catch (error) {
+        console.log(`Failed to fetch logo from ${logoUrl}:`, error)
+      }
+    }
+
+    return null
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.name.trim()) return
 
-    const newCompany = {
-      id: Date.now().toString(),
-      name: formData.name,
-      website: formData.website,
-      description: formData.description,
-      dateCreated: new Date().toISOString(),
-      jobCount: 0
-    }
+    setIsCreatingCompany(true)
 
-    setCompanies([...companies, newCompany])
-    setCurrentCompany(newCompany) // Set new company as current
-    setFormData({ name: '', website: '', description: '' })
-    setShowCreateForm(false)
+    try {
+      // Fetch company logo
+      const logoUrl = await fetchCompanyLogo(formData.website)
+
+      const newCompany = {
+        id: Date.now().toString(),
+        name: formData.name,
+        website: formData.website,
+        description: formData.description,
+        logo: logoUrl,
+        dateCreated: new Date().toISOString(),
+        jobCount: 0
+      }
+
+      setCompanies([...companies, newCompany])
+      setCurrentCompany(newCompany) // Set new company as current
+      setFormData({ name: '', website: '', description: '' })
+      setShowCreateForm(false)
+    } catch (error) {
+      console.error('Error creating company:', error)
+      // Still create the company even if logo fetch fails
+      const newCompany = {
+        id: Date.now().toString(),
+        name: formData.name,
+        website: formData.website,
+        description: formData.description,
+        logo: null,
+        dateCreated: new Date().toISOString(),
+        jobCount: 0
+      }
+
+      setCompanies([...companies, newCompany])
+      setCurrentCompany(newCompany)
+      setFormData({ name: '', website: '', description: '' })
+      setShowCreateForm(false)
+    } finally {
+      setIsCreatingCompany(false)
+    }
   }
 
   const deleteCompany = (companyId) => {
@@ -217,8 +222,6 @@ export default function Home() {
     router.push(`/company/${companyId}`)
   }
 
-
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -263,6 +266,9 @@ export default function Home() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="https://acme.com"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    We'll automatically fetch the company logo from this website
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -281,14 +287,16 @@ export default function Home() {
                     type="button"
                     onClick={() => setShowCreateForm(false)}
                     className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                    disabled={isCreatingCompany}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform focus:outline-none focus:ring-4 focus:ring-blue-200"
+                    disabled={isCreatingCompany}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 hover:scale-105 hover:shadow-lg transition-all duration-300 transform focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Add Company
+                    {isCreatingCompany ? 'Creating...' : 'Add Company'}
                   </button>
                 </div>
               </form>
@@ -310,7 +318,7 @@ export default function Home() {
               Add Company
             </button>
           </div>
-        ) : (
+        ) :
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {companies.map((company) => (
               <div
@@ -319,8 +327,19 @@ export default function Home() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
+                      {company.logo ? (
+                        <img
+                          src={company.logo}
+                          alt={`${company.name} logo`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'flex'
+                          }}
+                        />
+                      ) : null}
+                      <Building2 className={`h-5 w-5 text-blue-600 ${company.logo ? 'hidden' : ''}`} />
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-1">{company.name}</h3>
@@ -369,7 +388,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        )}
+        }
       </div>
   )
 } 

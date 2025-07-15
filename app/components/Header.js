@@ -174,8 +174,19 @@ export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuO
               className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
             >
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building2 className="h-3 w-3 text-blue-600" />
+                <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                  {currentCompany.logo ? (
+                    <img
+                      src={currentCompany.logo}
+                      alt={`${currentCompany.name} logo`}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <Building2 className={`h-3 w-3 text-blue-600 ${currentCompany.logo ? 'hidden' : ''}`} />
                 </div>
                 <span className="font-semibold text-gray-900 text-sm sm:text-base">
                   {currentCompany.name}
@@ -190,8 +201,19 @@ export default function Header({ onAddCompany, onToggleMobileMenu, isMobileMenuO
                   {/* Current Company Header */}
                   <div className="px-4 py-2 border-b border-gray-100">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Building2 className="h-3 w-3 text-blue-600" />
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                        {currentCompany.logo ? (
+                          <img
+                            src={currentCompany.logo}
+                            alt={`${currentCompany.name} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <Building2 className={`h-3 w-3 text-blue-600 ${currentCompany.logo ? 'hidden' : ''}`} />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">{currentCompany.name}</p>
