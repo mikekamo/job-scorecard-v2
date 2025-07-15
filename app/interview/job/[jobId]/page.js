@@ -14,32 +14,59 @@ export default function GenericInterviewPage() {
 
   useEffect(() => {
     // Load job data
-    const jobId = params.jobId
-    const savedJobs = localStorage.getItem('jobScorecards')
-    if (savedJobs) {
-      const jobs = JSON.parse(savedJobs)
-      const foundJob = jobs.find(j => j.id === jobId)
+    const jobId = params.jobId;
+    let foundJob = null;
+
+    console.log('Attempting to load job with ID:', jobId);
+
+    try {
+      // Check completed jobs first
+      const savedJobs = localStorage.getItem('jobScorecards');
+      console.log('savedJobs from jobScorecards:', savedJobs);
+      if (savedJobs) {
+        const jobs = JSON.parse(savedJobs);
+        console.log('Parsed jobs from jobScorecards:', jobs);
+        foundJob = jobs.find(j => j.id === jobId);
+        console.log('Found in jobScorecards:', foundJob);
+      }
+
+      // If not found in completed, check drafts
+      if (!foundJob) {
+        const savedDrafts = localStorage.getItem('job-drafts');
+        console.log('savedDrafts from job-drafts:', savedDrafts);
+        if (savedDrafts) {
+          const drafts = JSON.parse(savedDrafts);
+          console.log('Parsed drafts from job-drafts:', drafts);
+          foundJob = drafts.find(j => j.id === jobId);
+          console.log('Found in job-drafts:', foundJob);
+        }
+      }
+
       if (foundJob) {
-        setJob(foundJob)
+        console.log('Setting job:', foundJob);
+        setJob(foundJob);
         
         // Load company information
-        const savedCompanies = localStorage.getItem('scorecard-companies')
+        const savedCompanies = localStorage.getItem('scorecard-companies');
         if (savedCompanies) {
-          const companies = JSON.parse(savedCompanies)
-          const foundCompany = companies.find(c => c.id === foundJob.companyId)
+          const companies = JSON.parse(savedCompanies);
+          const foundCompany = companies.find(c => c.id === foundJob.companyId);
           if (foundCompany) {
-            setCompany(foundCompany)
+            setCompany(foundCompany);
           }
         }
         
         // Check if job has interview questions
         if (!foundJob.interviewQuestions || foundJob.interviewQuestions.length === 0) {
-          alert('This interview link is not configured with questions. Please contact the hiring team.')
-          return
+          alert('This interview link is not configured with questions. Please contact the hiring team.');
+          return;
         }
       } else {
-        alert('Interview not found. Please check the link or contact the hiring team.')
+        alert('Interview not found. Please check the link or contact the hiring team.');
       }
+    } catch (error) {
+      console.error('Error loading job from localStorage:', error);
+      alert('Error loading interview data. Please try again or contact support.');
     }
   }, [params.jobId])
 
@@ -66,8 +93,11 @@ export default function GenericInterviewPage() {
       
       console.log('🔍 Creating new candidate:', newCandidate)
 
-      // Add candidate to job
-      const savedJobs = localStorage.getItem('jobScorecards')
+      // Add candidate to job (check both storage locations)
+      const isDraft = job.id.startsWith('draft-')
+      const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
+      const savedJobs = localStorage.getItem(storageKey)
+      
       if (savedJobs) {
         const jobs = JSON.parse(savedJobs)
         const jobIndex = jobs.findIndex(j => j.id === job.id)
@@ -78,8 +108,8 @@ export default function GenericInterviewPage() {
           jobs[jobIndex].candidates.push(newCandidate)
           console.log('🔍 Added candidate to job, total candidates now:', jobs[jobIndex].candidates.length)
           
-          localStorage.setItem('jobScorecards', JSON.stringify(jobs))
-          console.log('🔍 Saved to localStorage')
+          localStorage.setItem(storageKey, JSON.stringify(jobs))
+          console.log('🔍 Saved to localStorage key:', storageKey)
 
           // Generate interview ID and redirect to normal interview flow
           const interviewId = `${job.id}-${newCandidate.id}-${Date.now()}`
