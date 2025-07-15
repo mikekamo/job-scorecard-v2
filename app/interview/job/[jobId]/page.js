@@ -70,13 +70,20 @@ export default function GenericInterviewPage() {
       const savedJobs = localStorage.getItem('jobScorecards')
       if (savedJobs) {
         const jobs = JSON.parse(savedJobs)
+        console.log('🔍 Total jobs before adding candidate:', jobs.length)
+        
         const jobIndex = jobs.findIndex(j => j.id === job.id)
+        console.log('🔍 Job found at index:', jobIndex)
+        console.log('🔍 Looking for job ID:', job.id)
+        console.log('🔍 Available job IDs:', jobs.map(j => j.id))
+        
         if (jobIndex !== -1) {
           if (!jobs[jobIndex].candidates) {
             jobs[jobIndex].candidates = []
           }
           jobs[jobIndex].candidates.push(newCandidate)
           console.log('🔍 Added candidate to job, total candidates now:', jobs[jobIndex].candidates.length)
+          console.log('🔍 Candidate saved with ID:', newCandidate.id)
           
           localStorage.setItem('jobScorecards', JSON.stringify(jobs))
           console.log('🔍 Saved to localStorage')
