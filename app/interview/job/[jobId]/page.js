@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { Video, User, Mail, Play, CheckCircle, Clock, Shield } from 'lucide-react'
 
 export default function GenericInterviewPage() {
   const params = useParams()
   const router = useRouter()
   const [job, setJob] = useState(null)
+  const [company, setCompany] = useState(null)
   const [candidateData, setCandidateData] = useState({ name: '', email: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -19,6 +21,17 @@ export default function GenericInterviewPage() {
       const foundJob = jobs.find(j => j.id === jobId)
       if (foundJob) {
         setJob(foundJob)
+        
+        // Load company information
+        const savedCompanies = localStorage.getItem('scorecard-companies')
+        if (savedCompanies) {
+          const companies = JSON.parse(savedCompanies)
+          const foundCompany = companies.find(c => c.id === foundJob.companyId)
+          if (foundCompany) {
+            setCompany(foundCompany)
+          }
+        }
+        
         // Check if job has interview questions
         if (!foundJob.interviewQuestions || foundJob.interviewQuestions.length === 0) {
           alert('This interview link is not configured with questions. Please contact the hiring team.')
@@ -99,87 +112,154 @@ export default function GenericInterviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      <div className="max-w-2xl mx-auto py-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-4xl mx-auto py-12 px-6">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="text-6xl mb-6">🎥</div>
-          <h1 className="text-4xl font-bold text-blue-900 mb-4">Video Interview</h1>
-          <h2 className="text-2xl font-semibold text-blue-800 mb-2">{job.title}</h2>
-          <p className="text-lg text-blue-700 mb-6">{job.department}</p>
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-8 shadow-xl">
+            <Video className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4">
+            Welcome to {company?.name || 'Our Company'}
+          </h1>
+          <h2 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-3">
+            {job.title}
+          </h2>
+          <div className="flex items-center justify-center gap-2 text-lg text-gray-600 mb-6">
+            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+            <span>{job.department}</span>
+            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+            <span>Video Interview</span>
+          </div>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Thank you for your interest in this position. We're excited to learn more about you through this video interview.
+          </p>
         </div>
 
-        {/* Candidate Info Form */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-            Let's get started! Please provide your details:
-          </h3>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={candidateData.name}
-                onChange={(e) => setCandidateData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                placeholder="Enter your full name"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={candidateData.email}
-                onChange={(e) => setCandidateData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                placeholder="your.email@example.com"
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-gray-500 mt-1">Optional - for follow-up communication</p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-2">Before you start:</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Make sure you have a working camera and microphone</li>
-                <li>• Find a quiet, well-lit space</li>
-                <li>• Allow camera/microphone permissions when prompted</li>
-                <li>• Each question will have a time limit for your response</li>
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Info Cards */}
+          <div className="md:col-span-1 space-y-4">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Ready to Start</h3>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  Working camera & microphone
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  Quiet, well-lit space
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  Allow permissions when prompted
+                </li>
               </ul>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !candidateData.name.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-4 px-6 rounded-lg font-medium text-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Starting Interview...
-                </>
-              ) : (
-                <>
-                  <span>🎥</span>
-                  Start Video Interview
-                </>
-              )}
-            </button>
-          </form>
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Interview Format</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                You'll be presented with {job.interviewQuestions?.length || 5} questions, each with a specific time limit for your response.
+              </p>
+            </div>
+
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Privacy</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                This interview will be recorded for evaluation purposes only.
+              </p>
+            </div>
+          </div>
+
+          {/* Main Form */}
+          <div className="md:col-span-2">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                Let's Get Started
+              </h3>
+              <p className="text-gray-600 text-center mb-8">
+                Please provide your details below to begin the interview
+              </p>
+              
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      required
+                      value={candidateData.name}
+                      onChange={(e) => setCandidateData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg bg-white/50 backdrop-blur-sm transition-all duration-200"
+                      placeholder="Enter your full name"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      value={candidateData.email}
+                      onChange={(e) => setCandidateData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg bg-white/50 backdrop-blur-sm transition-all duration-200"
+                      placeholder="your.email@example.com"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Optional - for follow-up communication</p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !candidateData.name.trim()}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Starting Interview...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5" />
+                      Start Video Interview
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-blue-600">
-            Having technical issues? Please contact the hiring team.
+        <div className="text-center mt-12">
+          <p className="text-sm text-gray-600 mb-2">
+            Having technical issues? Please contact {company?.name || 'the hiring team'} for assistance.
           </p>
         </div>
       </div>

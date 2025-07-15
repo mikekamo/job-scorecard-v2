@@ -22,6 +22,9 @@ export default function AuthProvider({ children }) {
 
   // Public routes that don't require authentication
   const publicRoutes = ['/login']
+  
+  // Check if current route is a candidate interview route
+  const isCandidateRoute = pathname.startsWith('/interview/job/')
 
   useEffect(() => {
     const checkAuth = () => {
@@ -46,7 +49,7 @@ export default function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!isLoading && !hasRedirected) {
-      const isPublicRoute = publicRoutes.includes(pathname)
+      const isPublicRoute = publicRoutes.includes(pathname) || isCandidateRoute
       
       if (!user && !isPublicRoute) {
         // User is not authenticated and trying to access a protected route
@@ -96,7 +99,7 @@ export default function AuthProvider({ children }) {
   }
 
   // Don't render children if user is not authenticated and on a protected route
-  const isPublicRoute = publicRoutes.includes(pathname)
+  const isPublicRoute = publicRoutes.includes(pathname) || isCandidateRoute
   if (!user && !isPublicRoute) {
     return null // This will prevent flash of content before redirect
   }

@@ -13,8 +13,10 @@ export default function ClientLayout({ children }) {
   const [currentCompany, setCurrentCompany] = useState(null)
   
   // AUTHENTICATION TEMPORARILY DISABLED - Always show header and sidebar
-  const showHeader = true
-  const showSidebar = true
+  // BUT exclude navigation for candidate interview pages
+  const isCandidate = pathname.startsWith('/interview/job/')
+  const showHeader = !isCandidate
+  const showSidebar = !isCandidate
   // const showHeader = pathname !== '/login'
   // const showSidebar = pathname !== '/login'
 
@@ -130,7 +132,7 @@ export default function ClientLayout({ children }) {
         )}
 
         {/* Breadcrumbs */}
-        <Breadcrumbs />
+        {!isCandidate && <Breadcrumbs />}
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
