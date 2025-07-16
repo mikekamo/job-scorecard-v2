@@ -107,6 +107,10 @@ export async function POST(request) {
     } else {
       // Production: Save to Vercel Blob
       try {
+        console.log(`🔧 Attempting to save ${jobs.length} jobs to blob storage...`)
+        console.log(`🔑 Token available: ${process.env.BLOB_READ_WRITE_TOKEN ? 'YES' : 'NO'}`)
+        console.log(`📁 Blob key: ${BLOB_KEY}`)
+        
         const blob = await put(BLOB_KEY, JSON.stringify(jobs), {
           access: 'public',
           contentType: 'application/json',
@@ -114,10 +118,15 @@ export async function POST(request) {
         })
         
         console.log(`☁️ Saved ${jobs.length} jobs to Vercel Blob storage`)
+        console.log(`🔗 Blob URL: ${blob.url}`)
         return NextResponse.json({ success: true, count: jobs.length, url: blob.url })
       } catch (blobError) {
         console.error('❌ Error saving to Vercel Blob:', blobError)
-        return NextResponse.json({ error: 'Failed to save jobs' }, { status: 500 })
+        console.error('❌ Error details:', JSON.stringify(blobError, null, 2))
+        return NextResponse.json({ 
+          error: 'Failed to save jobs', 
+          details: blobError.message 
+        }, { status: 500 })
       }
     }
   } catch (error) {
