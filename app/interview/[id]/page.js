@@ -21,18 +21,43 @@ export default function InterviewPage() {
   const [justUpdatedQuestion, setJustUpdatedQuestion] = useState(null)
   const [previousQuestionIndex, setPreviousQuestionIndex] = useState(null)
   const [skippedQuestions, setSkippedQuestions] = useState(new Set())
+  const [loadingError, setLoadingError] = useState(null)
   
   const videoRef = useRef(null)
   const timerRef = useRef(null)
+  const loadingTimeoutRef = useRef(null)
 
   useEffect(() => {
     if (!params?.id) return
     
+    // Set a timeout to show an error if data doesn't load
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (!job || !candidate) {
+        setLoadingError('Interview data failed to load. Please check your interview link and try again.')
+      }
+    }, 5000) // 5 second timeout
+    
     // Parse interview ID and load job/candidate data
     const interviewId = params.id
     const parts = interviewId.split('-')
-    const jobId = parts[0]
-    const candidateId = parts[1]
+    
+    // Handle the case where interview ID is: jobId-candidateId-timestamp
+    // We need to reconstruct the jobId and candidateId properly
+    let jobId, candidateId
+    
+    if (parts.length >= 3) {
+      // Last part is timestamp, second-to-last is candidateId
+      candidateId = parts[parts.length - 2]
+      // Everything before the candidateId is the jobId
+      jobId = parts.slice(0, parts.length - 2).join('-')
+    } else if (parts.length === 2) {
+      // Legacy format: jobId-candidateId
+      jobId = parts[0]
+      candidateId = parts[1]
+    } else {
+      console.error('Invalid interview ID format:', interviewId)
+      return
+    }
     
     console.log('🔍 Interview Debug - ID:', interviewId, 'JobID:', jobId, 'CandidateID:', candidateId)
     
@@ -40,15 +65,27 @@ export default function InterviewPage() {
     const savedJobs = localStorage.getItem('jobScorecards')
     if (savedJobs) {
       const jobs = JSON.parse(savedJobs)
+      console.log('🔍 Total jobs in localStorage:', jobs.length)
+      console.log('🔍 Available job IDs:', jobs.map(j => j.id))
+      
       const foundJob = jobs.find(j => j.id === jobId)
       console.log('🔍 Found job:', foundJob ? foundJob.title : 'NOT FOUND')
       if (foundJob) {
         setJob(foundJob)
+        console.log('🔍 Job has candidates:', foundJob.candidates?.length || 0)
+        console.log('🔍 Available candidate IDs:', foundJob.candidates?.map(c => c.id) || [])
+        
         const foundCandidate = foundJob.candidates?.find(c => c.id === candidateId)
         console.log('🔍 Found candidate:', foundCandidate ? foundCandidate.name : 'NOT FOUND')
         if (foundCandidate) {
           console.log('✅ Candidate set successfully:', foundCandidate.name)
           setCandidate(foundCandidate)
+          
+          // Clear the loading timeout since we found the data
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current)
+            loadingTimeoutRef.current = null
+          }
           
           // Check if candidate has existing video responses
           if (foundCandidate.videoResponses && foundCandidate.videoResponses.length > 0) {
@@ -68,7 +105,23 @@ export default function InterviewPage() {
               }
             }, 1000)
           }
+        } else {
+          console.error('❌ Candidate not found! CandidateID:', candidateId)
+          console.error('❌ This might be a timing issue. Please try refreshing the page.')
         }
+      } else {
+        console.error('❌ Job not found! JobID:', jobId)
+        console.error('❌ This might be a data issue. Please check the interview link.')
+      }
+    } else {
+      console.error('❌ No saved jobs found in localStorage')
+    }
+    
+    // Cleanup function
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+        loadingTimeoutRef.current = null
       }
     }
   }, [params?.id])
@@ -688,9 +741,26 @@ export default function InterviewPage() {
   if (!job || !candidate) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Interview...</h2>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="text-center max-w-md mx-auto p-6">
+          {loadingError ? (
+            <>
+              <div className="text-red-500 text-6xl mb-4">⚠️</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Failed</h2>
+              <p className="text-gray-600 mb-6">{loadingError}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium"
+              >
+                Try Again
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Interview...</h2>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="text-gray-500 mt-4 text-sm">Please wait while we set up your interview...</p>
+            </>
+          )}
         </div>
       </div>
     )
