@@ -114,7 +114,8 @@ export async function POST(request) {
         const blob = await put(BLOB_KEY, JSON.stringify(jobs), {
           access: 'public',
           contentType: 'application/json',
-          token: process.env.BLOB_READ_WRITE_TOKEN
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+          allowOverwrite: true
         })
         
         console.log(`☁️ Saved ${jobs.length} jobs to Vercel Blob storage`)
