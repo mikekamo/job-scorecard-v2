@@ -32,7 +32,7 @@ Thumbs.db
 *.swo
 
 # User data (PROTECTED - your jobs, candidates, and competencies)
-data/
+/data/
 *.backup.json 
 
 # Local video uploads (development only)

@@ -3,6 +3,8 @@ import { put, head } from '@vercel/blob'
 import fs from 'fs'
 import path from 'path'
 
+// Force redeploy - API route fix 2025-01-16
+
 const DATA_FILE = path.join(process.cwd(), 'data', 'jobs.json')
 const BLOB_KEY = 'job-scorecard-data.json'
 
