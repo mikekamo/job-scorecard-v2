@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { put, head } from '@vercel/blob'
+import { put, list } from '@vercel/blob'
 import fs from 'fs'
 import path from 'path'
 
@@ -44,22 +44,44 @@ export async function GET() {
     } else {
       // Production: Use Vercel Blob storage
       try {
-        const response = await fetch(`https://blob.vercel-storage.com/${BLOB_KEY}`, {
-          headers: {
-            'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
-          }
+        // List blobs to find our data file
+        const { blobs } = await list({
+          prefix: BLOB_KEY,
+          limit: 1,
+          token: process.env.BLOB_READ_WRITE_TOKEN
         })
         
-        if (response.ok) {
-          const jobs = await response.json()
-          console.log(`☁️ Loaded ${jobs.length} jobs from Vercel Blob storage`)
-          return NextResponse.json(jobs)
+        if (blobs.length > 0) {
+          // Found the blob, fetch it using the URL
+          const blobUrl = blobs[0].url
+          const response = await fetch(blobUrl)
+          
+          if (response.ok) {
+            const jobs = await response.json()
+            console.log(`☁️ Loaded ${jobs.length} jobs from Vercel Blob storage`)
+            return NextResponse.json(jobs)
+          } else {
+            console.log('☁️ Failed to fetch blob content')
+            return NextResponse.json([])
+          }
         } else {
           console.log('☁️ No blob data found, returning empty array')
           return NextResponse.json([])
         }
       } catch (blobError) {
         console.error('❌ Error loading from Vercel Blob:', blobError)
+        
+        // Fallback to environment variable if Blob fails
+        if (process.env.INTERVIEW_DATA) {
+          try {
+            const envJobs = JSON.parse(process.env.INTERVIEW_DATA)
+            console.log(`📦 Loaded ${envJobs.length} jobs from environment variable fallback`)
+            return NextResponse.json(envJobs)
+          } catch (envError) {
+            console.error('❌ Error parsing environment variable data:', envError)
+          }
+        }
+        
         return NextResponse.json([])
       }
     }
@@ -87,7 +109,8 @@ export async function POST(request) {
       try {
         const blob = await put(BLOB_KEY, JSON.stringify(jobs), {
           access: 'public',
-          contentType: 'application/json'
+          contentType: 'application/json',
+          token: process.env.BLOB_READ_WRITE_TOKEN
         })
         
         console.log(`☁️ Saved ${jobs.length} jobs to Vercel Blob storage`)
