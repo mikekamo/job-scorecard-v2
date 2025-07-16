@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "app/api/data/route.js": {
+      "maxDuration": 30
+    },
+    "app/api/*/route.js": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
+} 
