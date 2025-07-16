@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Interview Link</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: #005a8a;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #007cba;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Interview Link</h1>
+    <p>This tool will create the missing job in localStorage so your interview link works.</p>
+    
+    <div class="container">
+        <h2>Problem</h2>
+        <p>The interview link is looking for job ID: <code>draft-1752676420310-gq7xu8tao</code></p>
+        <p>This job doesn't exist in localStorage or server storage.</p>
+    </div>
+    
+    <div class="container">
+        <h2>Solution</h2>
+        <p>Click the button below to create a sample job with the required ID:</p>
+        <button class="button" onclick="createMissingJob()">Create Missing Job</button>
+        <div id="result"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Click the "Create Missing Job" button above</li>
+            <li>Go to your interview link and it should work now</li>
+            <li>If you need to create a real job, use the main app to create it properly</li>
+        </ol>
+    </div>
+    
+    <script>
+        function createMissingJob() {
+            const jobId = 'draft-1752676420310-gq7xu8tao';
+            
+            try {
+                // Create a sample job with the required ID
+                const sampleJob = {
+                    id: jobId,
+                    title: 'Sample Job (Fix for Interview Link)',
+                    description: 'This is a temporary job created to fix the interview link. Please create a proper job through the main application.',
+                    competencies: [
+                        { id: '1', name: 'Technical Skills', description: 'Proficiency in required technical skills', weight: 1 },
+                        { id: '2', name: 'Communication', description: 'Verbal and written communication abilities', weight: 1 },
+                        { id: '3', name: 'Problem Solving', description: 'Ability to analyze and solve complex problems', weight: 1 }
+                    ],
+                    interviewQuestions: [
+                        { id: 'q1', question: 'Tell me about your technical experience and the technologies you work with most frequently.', timeLimit: 240, competencyId: '1' },
+                        { id: 'q2', question: 'Describe a time when you had to explain a complex concept to someone with less technical background.', timeLimit: 180, competencyId: '2' },
+                        { id: 'q3', question: 'Walk me through how you approach solving a challenging problem you have never encountered before.', timeLimit: 240, competencyId: '3' }
+                    ],
+                    companyId: 'sample-company',
+                    isDraft: true,
+                    dateCreated: new Date().toISOString(),
+                    lastModified: new Date().toISOString(),
+                    currentStep: 2,
+                    candidates: []
+                };
+                
+                // Add to job-drafts in localStorage
+                const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]');
+                const draftIndex = existingDrafts.findIndex(job => job.id === jobId);
+                
+                if (draftIndex !== -1) {
+                    existingDrafts[draftIndex] = sampleJob;
+                } else {
+                    existingDrafts.push(sampleJob);
+                }
+                
+                localStorage.setItem('job-drafts', JSON.stringify(existingDrafts));
+                
+                // Also add to jobScorecards as a backup
+                const existingJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]');
+                const jobIndex = existingJobs.findIndex(job => job.id === jobId);
+                
+                if (jobIndex !== -1) {
+                    existingJobs[jobIndex] = sampleJob;
+                } else {
+                    existingJobs.push(sampleJob);
+                }
+                
+                localStorage.setItem('jobScorecards', JSON.stringify(existingJobs));
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="success">
+                        ✅ Success! Job created with ID: ${jobId}<br>
+                        Added to both job-drafts and jobScorecards in localStorage.<br>
+                        Your interview link should now work!
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Show current localStorage status
+        function showStatus() {
+            const drafts = JSON.parse(localStorage.getItem('job-drafts') || '[]');
+            const jobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]');
+            
+            console.log('Current localStorage status:');
+            console.log('- job-drafts:', drafts.length, 'items');
+            console.log('- jobScorecards:', jobs.length, 'items');
+            
+            const targetJob = drafts.find(j => j.id === 'draft-1752676420310-gq7xu8tao') || 
+                            jobs.find(j => j.id === 'draft-1752676420310-gq7xu8tao');
+            
+            if (targetJob) {
+                console.log('✅ Target job found:', targetJob.title);
+            } else {
+                console.log('❌ Target job NOT found');
+            }
+        }
+        
+        // Show status on page load
+        window.addEventListener('load', showStatus);
+    </script>
+</body>
+</html> 

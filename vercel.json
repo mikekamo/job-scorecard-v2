@@ -1,4 +1,6 @@
 {
+  "buildCommand": "next build",
+  "installCommand": "npm install",
   "functions": {
     "app/api/data/route.js": {
       "maxDuration": 30
