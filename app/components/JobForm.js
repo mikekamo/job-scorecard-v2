@@ -28,13 +28,10 @@ const QUESTION_BANK = [
 export default function JobForm({ job, company, onSave, onCancel }) {
   const { jobs } = useJobStorage()
   
-  // Initialize currentStep based on job type
+  // Initialize currentStep - simplified without draft logic
   const [currentStep, setCurrentStep] = useState(() => {
-    if (job?.isDraft) {
-      // For drafts, continue from where they left off
-      return job.currentStep || 1
-    } else if (job) {
-      // For existing complete jobs, show all steps
+    if (job) {
+      // For existing jobs, show all steps
       return 2
     } else {
       // For new jobs, start at step 1
@@ -71,7 +68,6 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false)
   const [showQuestionUpdateModal, setShowQuestionUpdateModal] = useState(false)
   const [pendingCompetencyUpdate, setPendingCompetencyUpdate] = useState(null)
-  const [draftId, setDraftId] = useState(job?.id || null) // Track draft ID for new jobs
   const [showTemplatesModal, setShowTemplatesModal] = useState(false)
   const [activeTemplateTab, setActiveTemplateTab] = useState('competencies')
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
@@ -133,54 +129,9 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }
   }, [formData.competencies.length, isGeneratingFullSection])
 
-  // Auto-save drafts when form data changes
-  useEffect(() => {
-    // Auto-save conditions:
-    // 1. For existing drafts (job?.isDraft) - save any changes
-    // 2. For new jobs - save when we have title and some description
-    const shouldAutoSave = job?.isDraft || 
-      (!job && formData.title.trim() && formData.description.trim().length >= 50)
-    
-    if (shouldAutoSave) {
-      const timeoutId = setTimeout(() => {
-        saveDraft().catch(error => console.error('Auto-save failed:', error))
-      }, 1000) // Auto-save after 1 second of inactivity
-      
-      return () => clearTimeout(timeoutId)
-    }
-  }, [formData, currentStep, job?.isDraft])
 
-  // Save draft when user navigates away
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (formData.title.trim() && formData.description.trim().length >= 50) {
-        saveDraft().catch(error => console.error('Save on unload failed:', error))
-      }
-    }
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && formData.title.trim() && formData.description.trim().length >= 50) {
-        saveDraft().catch(error => console.error('Save on visibility change failed:', error))
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [formData.title, formData.description])
-
-  // Save draft immediately when moving to step 2
-  useEffect(() => {
-    if (currentStep === 2 && !job && formData.title.trim() && formData.description.trim().length >= 50) {
-      saveDraft().catch(error => console.error('Save on step 2 failed:', error))
-    }
-  }, [currentStep])
-
-  const isEditingJob = job && !job.isDraft
+  const isEditingJob = !!job
 
   // Get all unique competencies from all jobs (excluding current job if editing)
   const getAllCompetencies = () => {
@@ -625,11 +576,6 @@ export default function JobForm({ job, company, onSave, onCancel }) {
         return
       }
       
-      // Save as draft before proceeding to step 2
-      if (!job || job.isDraft) { // Save for new jobs or existing drafts
-        await saveDraft()
-      }
-      
       // Move to step 2 first
       setCurrentStep(2)
       
@@ -639,69 +585,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }
   }
 
-  const saveDraft = async () => {
-    // Generate a consistent ID for new jobs
-    const currentDraftId = draftId || `draft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
-    const draftData = {
-      ...formData,
-      id: currentDraftId,
-      companyId: company?.id,
-      isDraft: true,
-      dateCreated: job?.dateCreated || new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      currentStep: currentStep, // Save current step
-      candidates: []
-    }
-    
-    try {
-      // Get existing drafts
-      const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]')
-      
-      // Check if this draft already exists
-      const existingDraftIndex = existingDrafts.findIndex(draft => draft.id === currentDraftId)
-      
-      if (existingDraftIndex !== -1) {
-        // Update existing draft
-        existingDrafts[existingDraftIndex] = draftData
-      } else {
-        // Add new draft
-        existingDrafts.push(draftData)
-      }
-      
-      localStorage.setItem('job-drafts', JSON.stringify(existingDrafts))
-      console.log('💾 Draft saved:', draftData.title)
-      
-      // Also sync to server storage
-      try {
-        const completedJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]')
-        const allJobs = [...completedJobs, ...existingDrafts]
-        
-        const response = await fetch('/api/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(allJobs)
-        })
-        
-        if (response.ok) {
-          console.log('💾 Draft synced to server storage')
-        } else {
-          console.warn('⚠️ Draft saved locally but failed to sync to server')
-        }
-      } catch (serverError) {
-        console.warn('⚠️ Draft saved locally but server sync failed:', serverError)
-      }
-      
-      // Update the draft ID if this is a new job
-      if (!draftId) {
-        setDraftId(currentDraftId)
-      }
-    } catch (error) {
-      console.error('Error saving draft:', error)
-    }
-  }
+
 
   const handleBackStep = () => {
     setCurrentStep(1)
@@ -795,8 +679,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Keep the same ID throughout the job's lifecycle (don't change draft IDs)
-    const finalJobId = draftId || job?.id || Date.now().toString()
+    // Generate ID for new jobs or use existing ID for updates
+    const finalJobId = job?.id || Date.now().toString()
     
     // Prepare the final job data
     const finalJobData = {
@@ -807,13 +691,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       completedAt: new Date().toISOString()
     }
     
-    // Call the save function FIRST to ensure the completed job is saved
+    // Save the completed job
     onSave(finalJobData)
-    
-    // THEN remove the draft to prevent race conditions
-    if (job?.isDraft || draftId) {
-      await removeDraft(finalJobId) // Use the same ID for removal
-    }
     
     // If updating an existing job, go back to the jobs list
     if (job) {
@@ -821,42 +700,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     }
   }
 
-  const removeDraft = async (idToRemove) => {
-    try {
-      // Remove from localStorage drafts
-      const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]')
-      const updatedDrafts = existingDrafts.filter(draft => draft.id !== idToRemove)
-      localStorage.setItem('job-drafts', JSON.stringify(updatedDrafts))
-      console.log('🗑️ Draft removed from localStorage:', idToRemove)
-      
-      // Add a small delay to ensure the completed job is saved first
-      setTimeout(async () => {
-        try {
-          // Sync to server storage with current data
-          const completedJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]')
-          const allJobs = [...completedJobs, ...updatedDrafts]
-          
-          const response = await fetch('/api/data', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(allJobs)
-          })
-          
-          if (response.ok) {
-            console.log('✅ Server storage synced after draft removal')
-          } else {
-            console.warn('⚠️ Server sync failed after draft removal')
-          }
-        } catch (serverError) {
-          console.warn('⚠️ Server sync failed after draft removal:', serverError)
-        }
-      }, 500) // 500ms delay to ensure the completed job is saved first
-    } catch (error) {
-      console.error('Error removing draft:', error)
-    }
-  }
+
 
 
   const shouldShowCompetencies = currentStep >= 2 || isEditingJob

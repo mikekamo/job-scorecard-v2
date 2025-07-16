@@ -222,13 +222,9 @@ export function useJobStorage() {
   const updateJob = useCallback(async (updatedJob) => {
     console.log('🔄 Updating job:', updatedJob.id)
     
-    // Determine storage location based on job type
-    const isDraft = updatedJob.isDraft === true
-    const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
-    
     try {
-      // Get current jobs from the appropriate storage
-      const currentJobs = localStorage.getItem(storageKey)
+      // Get current jobs from storage
+      const currentJobs = localStorage.getItem('jobScorecards')
       let jobsArray = currentJobs ? JSON.parse(currentJobs) : []
       
       // Update the job in the array
@@ -240,7 +236,7 @@ export function useJobStorage() {
         }
         
         // Save back to localStorage
-        localStorage.setItem(storageKey, JSON.stringify(jobsArray))
+        localStorage.setItem('jobScorecards', JSON.stringify(jobsArray))
         
         // Also save to server
         await saveData(jobsArray)
