@@ -593,10 +593,9 @@ export default function InterviewPage() {
       console.log('Submitting video data:', videoResponses)
 
       // Save to localStorage by updating the candidate
-      // Determine correct storage key based on job status (not ID prefix)
-      const isDraft = job.isDraft === true
-      const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
-      console.log('🔍 Using storage key:', storageKey, 'for job:', job.id, 'isDraft:', isDraft)
+      // Only using jobScorecards storage now (draft functionality removed)
+      const storageKey = 'jobScorecards'
+      console.log('🔍 Using storage key:', storageKey, 'for job:', job.id)
       
       const savedJobs = localStorage.getItem(storageKey)
       console.log('🔍 savedJobs found:', !!savedJobs)

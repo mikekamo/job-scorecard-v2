@@ -118,6 +118,9 @@ export function useJobStorage() {
   const saveData = useCallback(async (newJobs) => {
     console.log(`💾 Saving ${newJobs.length} jobs...`)
     
+    // Log job IDs being saved to ensure consistency
+    console.log('🔧 Job IDs being saved:', newJobs.map(j => j.id))
+    
     try {
       // Save to server first (primary storage)
       const response = await fetch('/api/data', {

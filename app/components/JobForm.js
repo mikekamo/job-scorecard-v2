@@ -680,7 +680,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
     e.preventDefault()
     
     // Generate ID for new jobs or use existing ID for updates
-    const finalJobId = job?.id || Date.now().toString()
+    // Ensure consistent ID generation by using a more unique format
+    const finalJobId = job?.id || `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
     // Prepare the final job data
     const finalJobData = {
@@ -690,6 +691,8 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       lastModified: new Date().toISOString(),
       completedAt: new Date().toISOString()
     }
+    
+    console.log('🔧 JobForm: Saving job with ID:', finalJobId)
     
     // Save the completed job
     onSave(finalJobData)

@@ -7,6 +7,7 @@ import JobsList from '../../components/JobsList'
 import JobForm from '../../components/JobForm'
 import ScorecardView from '../../components/ScorecardView'
 import DebugPanel from '../../components/DebugPanel'
+import { useJobStorage } from '../../hooks/useJobStorage'
 
 export default function CompanyJobsPage() {
   const params = useParams()
@@ -19,6 +20,9 @@ export default function CompanyJobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentView, setCurrentView] = useState('jobs') // 'jobs', 'create-job', 'scorecard'
   const [selectedJob, setSelectedJob] = useState(null)
+  
+  // Use the job storage hook for consistent data management
+  const { saveData } = useJobStorage()
 
   // Load company and jobs data
   useEffect(() => {
@@ -29,12 +33,12 @@ export default function CompanyJobsPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        loadJobsAndDrafts()
+        loadJobs()
       }
     }
 
     const handleFocus = () => {
-      loadJobsAndDrafts()
+      loadJobs()
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -83,20 +87,10 @@ export default function CompanyJobsPage() {
     }
   }
 
-  // Save jobs to localStorage
+  // Update company job count when jobs change
   useEffect(() => {
     if (!isLoading) {
-      // Update jobs in global storage
       try {
-        const savedJobs = localStorage.getItem('jobScorecards')
-        const allJobs = savedJobs ? JSON.parse(savedJobs) : []
-        
-        // Update regular jobs
-        const otherCompanyJobs = allJobs.filter(job => job.companyId !== companyId)
-        const updatedJobs = [...otherCompanyJobs, ...jobs]
-        localStorage.setItem('jobScorecards', JSON.stringify(updatedJobs))
-        
-        // Update company job count
         const savedCompanies = localStorage.getItem('scorecard-companies')
         if (savedCompanies) {
           const companies = JSON.parse(savedCompanies)
@@ -106,10 +100,10 @@ export default function CompanyJobsPage() {
           localStorage.setItem('scorecard-companies', JSON.stringify(updatedCompanies))
         }
       } catch (error) {
-        console.error('Error saving jobs:', error)
+        console.error('Error updating company data:', error)
       }
     }
-  }, [jobs, isLoading, companyId])
+  }, [jobs.length, isLoading, companyId])
 
   // Handle job selection from URL parameter
   useEffect(() => {
@@ -191,9 +185,9 @@ export default function CompanyJobsPage() {
     }
   }
 
-  const addJob = (jobData) => {
+  const addJob = async (jobData) => {
+    // Use the ID provided by JobForm (don't generate a new one)
     const newJob = {
-      id: jobData.id || Date.now().toString(), // Use existing ID if available (from draft)
       ...jobData,
       companyId: companyId, // Associate job with company
       candidates: jobData.candidates || [],
@@ -201,11 +195,42 @@ export default function CompanyJobsPage() {
       isDraft: false, // Ensure it's marked as complete
       lastModified: new Date().toISOString()
     }
+    
+    console.log('🔧 Company: Adding job with ID:', newJob.id)
+    
+    // Get all existing jobs and add the new one
+    const savedJobs = localStorage.getItem('jobScorecards')
+    const allJobs = savedJobs ? JSON.parse(savedJobs) : []
+    const updatedJobs = [...allJobs, newJob]
+    
+    // Save using the proper storage system (saves to both server and localStorage)
+    await saveData(updatedJobs)
+    
+    // Update local state
     setJobs([...jobs, newJob])
     setCurrentView('jobs')
   }
 
-  const updateJob = (jobId, jobData) => {
+  const updateJob = async (jobId, jobData) => {
+    // Get all existing jobs and update the specific one
+    const savedJobs = localStorage.getItem('jobScorecards')
+    const allJobs = savedJobs ? JSON.parse(savedJobs) : []
+    
+    const updatedJobs = allJobs.map(job => 
+      job.id === jobId ? { 
+        ...job, 
+        ...jobData,
+        isDraft: false, // Ensure it's marked as complete when updated
+        lastModified: new Date().toISOString()
+      } : job
+    )
+    
+    console.log('🔧 Company: Updating job with ID:', jobId)
+    
+    // Save using the proper storage system (saves to both server and localStorage)
+    await saveData(updatedJobs)
+    
+    // Update local state
     setJobs(jobs.map(job => 
       job.id === jobId ? { 
         ...job, 
@@ -216,11 +241,20 @@ export default function CompanyJobsPage() {
     ))
   }
 
-  const deleteJob = (jobId) => {
-    // Remove from the jobs state (this handles both regular jobs and drafts in the UI)
-    // The useEffect will handle updating localStorage properly
+  const deleteJob = async (jobId) => {
+    // Get all existing jobs and remove the specific one
+    const savedJobs = localStorage.getItem('jobScorecards')
+    const allJobs = savedJobs ? JSON.parse(savedJobs) : []
+    
+    const updatedJobs = allJobs.filter(job => job.id !== jobId)
+    
+    console.log('🗑️ Company: Deleting job with ID:', jobId)
+    
+    // Save using the proper storage system (saves to both server and localStorage)
+    await saveData(updatedJobs)
+    
+    // Update local state
     setJobs(jobs.filter(job => job.id !== jobId))
-    console.log('🗑️ Job/Draft deleted:', jobId)
   }
 
   const duplicateJob = (job) => {

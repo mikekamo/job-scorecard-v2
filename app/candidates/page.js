@@ -52,12 +52,7 @@ export default function CandidatesPage() {
             allJobs = allJobs.concat(jobs)
           }
           
-          // Check job-drafts (draft jobs)
-          const savedDrafts = localStorage.getItem('job-drafts')
-          if (savedDrafts) {
-            const drafts = JSON.parse(savedDrafts)
-            allJobs = allJobs.concat(drafts)
-          }
+          // Draft functionality removed - only checking jobScorecards
           
           // If no jobs found in localStorage, try server storage
           if (allJobs.length === 0) {
@@ -71,14 +66,8 @@ export default function CandidatesPage() {
                 
                 // Sync to localStorage for future use
                 console.log('🔄 Syncing server data to localStorage...')
-                const completedJobs = serverJobs.filter(job => !job.isDraft)
-                const draftJobs = serverJobs.filter(job => job.isDraft)
-                
-                if (completedJobs.length > 0) {
-                  localStorage.setItem('jobScorecards', JSON.stringify(completedJobs))
-                }
-                if (draftJobs.length > 0) {
-                  localStorage.setItem('job-drafts', JSON.stringify(draftJobs))
+                if (serverJobs.length > 0) {
+                  localStorage.setItem('jobScorecards', JSON.stringify(serverJobs))
                 }
                 console.log('✅ Server data synced to localStorage')
               } else {

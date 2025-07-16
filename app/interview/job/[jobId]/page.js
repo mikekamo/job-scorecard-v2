@@ -31,17 +31,7 @@ export default function GenericInterviewPage() {
           console.log('Found in jobScorecards:', foundJob);
         }
 
-        // If not found in completed, check drafts
-        if (!foundJob) {
-          const savedDrafts = localStorage.getItem('job-drafts');
-          console.log('savedDrafts from job-drafts:', savedDrafts);
-          if (savedDrafts) {
-            const drafts = JSON.parse(savedDrafts);
-            console.log('Parsed drafts from job-drafts:', drafts);
-            foundJob = drafts.find(j => j.id === jobId);
-            console.log('Found in job-drafts:', foundJob);
-          }
-        }
+        // Draft functionality removed - jobs are only stored in jobScorecards now
 
         // If still not found, check server storage
         if (!foundJob) {
@@ -127,9 +117,8 @@ export default function GenericInterviewPage() {
       
       console.log('🔍 Creating new candidate:', newCandidate)
 
-      // Add candidate to job (check both storage locations)
-      const isDraft = job.isDraft === true
-      const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
+      // Add candidate to job (only using jobScorecards storage now)
+      const storageKey = 'jobScorecards'
       
       let jobs = []
       const savedJobs = localStorage.getItem(storageKey)
