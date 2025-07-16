@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client only when needed to avoid build errors
+let openai = null
+
+function getOpenAIClient() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || 'dummy-key',
+    })
+  }
+  return openai
+}
 
 export async function POST(request) {
   try {
+    // Check if API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.' },
+        { status: 500 }
+      )
+    }
+
     const { jobTitle, jobDescription, competencies, company, onePerCompetency } = await request.json()
 
     if (!jobTitle || !competencies || competencies.length === 0) {
@@ -224,7 +240,7 @@ Return ONLY a JSON array in this exact format:
 Do not include any other text, explanations, or formatting - just the JSON array.`
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {

@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client only when needed to avoid build errors
+let openai = null
+
+function getOpenAIClient() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || 'dummy-key',
+    })
+  }
+  return openai
+}
 
 export async function POST(request) {
   try {
+    // Check if API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.' },
+        { status: 500 }
+      )
+    }
+
     const { jobTitle, company, userPrompt } = await request.json()
 
     if (!jobTitle) {
@@ -58,7 +74,7 @@ Create a well-structured job description with clear headers and bullet points in
 
 Use markdown formatting with ## for headers and • for bullet points. Keep it professional, engaging, and expand on the user's ideas while maintaining their intent and focus. Make sure to honor the specific requirements mentioned in the user's description. If company information is provided, try to incorporate relevant details about the company culture, industry, or benefits that might be typical for this type of company.`
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
