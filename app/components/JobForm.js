@@ -481,7 +481,15 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       
     } catch (error) {
       console.error('Error generating competencies and questions:', error)
-      alert('Failed to generate competencies and questions. Please try again.')
+      
+      // Provide specific error message based on the error type
+      if (error.message.includes('401') || error.message.includes('authentication') || error.message.includes('API key')) {
+        alert('🔑 OpenAI API key is invalid or expired.\n\nTo fix this:\n1. Get a new API key from https://platform.openai.com/account/api-keys\n2. Update OPENAI_API_KEY in your .env.local file\n3. Restart the development server\n\nFor now, you can manually add competencies and questions.')
+      } else {
+        alert('⚠️ AI generation failed. You can manually add competencies and questions, or try again later.')
+      }
+      
+      // Don't re-throw the error - let the user continue manually
     } finally {
       setIsGeneratingCompetencies(false)
       setIsGeneratingQuestions(false)
@@ -622,8 +630,11 @@ export default function JobForm({ job, company, onSave, onCancel }) {
         await saveDraft()
       }
       
-      // Generate competencies and questions automatically
+      // Move to step 2 first
       setCurrentStep(2)
+      
+      // Try to generate competencies and questions automatically
+      // Error handling is now contained within generateCompetencies
       await generateCompetencies()
     }
   }
@@ -784,7 +795,7 @@ export default function JobForm({ job, company, onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Use the draft ID if available, otherwise generate a new one
+    // Keep the same ID throughout the job's lifecycle (don't change draft IDs)
     const finalJobId = draftId || job?.id || Date.now().toString()
     
     // Prepare the final job data
@@ -796,13 +807,13 @@ export default function JobForm({ job, company, onSave, onCancel }) {
       completedAt: new Date().toISOString()
     }
     
-    // If this was a draft, remove it from drafts first
-    if (job?.isDraft || draftId) {
-      await removeDraft(finalJobId)
-    }
-    
-    // Call the save function
+    // Call the save function FIRST to ensure the completed job is saved
     onSave(finalJobData)
+    
+    // THEN remove the draft to prevent race conditions
+    if (job?.isDraft || draftId) {
+      await removeDraft(finalJobId) // Use the same ID for removal
+    }
     
     // If updating an existing job, go back to the jobs list
     if (job) {
@@ -812,32 +823,36 @@ export default function JobForm({ job, company, onSave, onCancel }) {
 
   const removeDraft = async (idToRemove) => {
     try {
-      // Remove from localStorage
+      // Remove from localStorage drafts
       const existingDrafts = JSON.parse(localStorage.getItem('job-drafts') || '[]')
       const updatedDrafts = existingDrafts.filter(draft => draft.id !== idToRemove)
       localStorage.setItem('job-drafts', JSON.stringify(updatedDrafts))
+      console.log('🗑️ Draft removed from localStorage:', idToRemove)
       
-      // Also remove from server storage by combining all jobs and sending to server
-      try {
-        const completedJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]')
-        const allJobs = [...completedJobs, ...updatedDrafts]
-        
-        const response = await fetch('/api/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(allJobs)
-        })
-        
-        if (response.ok) {
-          console.log('🗑️ Draft removed from both local and server storage:', idToRemove)
-        } else {
-          console.warn('⚠️ Draft removed from localStorage but failed to update server storage')
+      // Add a small delay to ensure the completed job is saved first
+      setTimeout(async () => {
+        try {
+          // Sync to server storage with current data
+          const completedJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]')
+          const allJobs = [...completedJobs, ...updatedDrafts]
+          
+          const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(allJobs)
+          })
+          
+          if (response.ok) {
+            console.log('✅ Server storage synced after draft removal')
+          } else {
+            console.warn('⚠️ Server sync failed after draft removal')
+          }
+        } catch (serverError) {
+          console.warn('⚠️ Server sync failed after draft removal:', serverError)
         }
-      } catch (serverError) {
-        console.warn('⚠️ Draft removed from localStorage but server sync failed:', serverError)
-      }
+      }, 500) // 500ms delay to ensure the completed job is saved first
     } catch (error) {
       console.error('Error removing draft:', error)
     }
