@@ -35,48 +35,100 @@ export default function InterviewPage() {
       if (!job || !candidate) {
         setLoadingError('Interview data failed to load. Please check your interview link and try again.')
       }
-    }, 5000) // 5 second timeout
+    }, 10000) // Increased timeout to 10 seconds
     
-    // Parse interview ID and load job/candidate data
-    const interviewId = params.id
-    const parts = interviewId.split('-')
-    
-    // Handle the case where interview ID is: jobId-candidateId-timestamp
-    // We need to reconstruct the jobId and candidateId properly
-    let jobId, candidateId
-    
-    if (parts.length >= 3) {
-      // Last part is timestamp, second-to-last is candidateId
-      candidateId = parts[parts.length - 2]
-      // Everything before the candidateId is the jobId
-      jobId = parts.slice(0, parts.length - 2).join('-')
-    } else if (parts.length === 2) {
-      // Legacy format: jobId-candidateId
-      jobId = parts[0]
-      candidateId = parts[1]
-    } else {
-      console.error('Invalid interview ID format:', interviewId)
-      return
-    }
-    
-    console.log('🔍 Interview Debug - ID:', interviewId, 'JobID:', jobId, 'CandidateID:', candidateId)
-    
-    // Load from localStorage
-    const savedJobs = localStorage.getItem('jobScorecards')
-    if (savedJobs) {
-      const jobs = JSON.parse(savedJobs)
-      console.log('🔍 Total jobs in localStorage:', jobs.length)
-      console.log('🔍 Available job IDs:', jobs.map(j => j.id))
+    const loadInterviewData = async () => {
+      // Parse interview ID and load job/candidate data
+      const interviewId = params.id
+      const parts = interviewId.split('-')
       
-      const foundJob = jobs.find(j => j.id === jobId)
-      console.log('🔍 Found job:', foundJob ? foundJob.title : 'NOT FOUND')
+      // Handle the case where interview ID is: jobId-candidateId-timestamp
+      // We need to reconstruct the jobId and candidateId properly
+      let jobId, candidateId
+      
+      if (parts.length >= 3) {
+        // Last part is timestamp, second-to-last is candidateId
+        candidateId = parts[parts.length - 2]
+        // Everything before the candidateId is the jobId
+        jobId = parts.slice(0, parts.length - 2).join('-')
+      } else if (parts.length === 2) {
+        // Legacy format: jobId-candidateId
+        jobId = parts[0]
+        candidateId = parts[1]
+      } else {
+        console.error('Invalid interview ID format:', interviewId)
+        setLoadingError('Invalid interview link format. Please check your link.')
+        return
+      }
+      
+      console.log('🔍 Interview Debug - ID:', interviewId, 'JobID:', jobId, 'CandidateID:', candidateId)
+      
+      let foundJob = null
+      let foundCandidate = null
+      
+      // First try localStorage
+      const savedJobs = localStorage.getItem('jobScorecards')
+      if (savedJobs) {
+        const jobs = JSON.parse(savedJobs)
+        console.log('🔍 Total jobs in localStorage:', jobs.length)
+        console.log('🔍 Available job IDs:', jobs.map(j => j.id))
+        
+        foundJob = jobs.find(j => j.id === jobId)
+        console.log('🔍 Found job in localStorage:', foundJob ? foundJob.title : 'NOT FOUND')
+        
+        if (foundJob) {
+          console.log('🔍 Job has candidates:', foundJob.candidates?.length || 0)
+          console.log('🔍 Available candidate IDs:', foundJob.candidates?.map(c => c.id) || [])
+          
+          foundCandidate = foundJob.candidates?.find(c => c.id === candidateId)
+          console.log('🔍 Found candidate in localStorage:', foundCandidate ? foundCandidate.name : 'NOT FOUND')
+        }
+      }
+      
+      // If not found in localStorage, try server storage
+      if (!foundJob || !foundCandidate) {
+        console.log('🔍 Job/candidate not found in localStorage, checking server storage...')
+        try {
+          const response = await fetch('/api/data')
+          if (response.ok) {
+            const serverJobs = await response.json()
+            console.log('🔍 Server returned', serverJobs.length, 'jobs')
+            
+            foundJob = serverJobs.find(j => j.id === jobId)
+            console.log('🔍 Found job on server:', foundJob ? foundJob.title : 'NOT FOUND')
+            
+            if (foundJob) {
+              console.log('🔍 Job has candidates on server:', foundJob.candidates?.length || 0)
+              console.log('🔍 Available candidate IDs on server:', foundJob.candidates?.map(c => c.id) || [])
+              
+              foundCandidate = foundJob.candidates?.find(c => c.id === candidateId)
+              console.log('🔍 Found candidate on server:', foundCandidate ? foundCandidate.name : 'NOT FOUND')
+              
+              // If found on server, sync to localStorage for future use
+              if (foundJob && foundCandidate) {
+                console.log('🔄 Syncing server data to localStorage...')
+                const existingJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]')
+                const jobIndex = existingJobs.findIndex(j => j.id === jobId)
+                if (jobIndex !== -1) {
+                  existingJobs[jobIndex] = foundJob
+                } else {
+                  existingJobs.push(foundJob)
+                }
+                localStorage.setItem('jobScorecards', JSON.stringify(existingJobs))
+                console.log('✅ Server data synced to localStorage')
+              }
+            }
+          } else {
+            console.error('❌ Failed to fetch from server:', response.status)
+          }
+        } catch (serverError) {
+          console.error('❌ Error fetching from server:', serverError)
+        }
+      }
+      
       if (foundJob) {
         setJob(foundJob)
-        console.log('🔍 Job has candidates:', foundJob.candidates?.length || 0)
-        console.log('🔍 Available candidate IDs:', foundJob.candidates?.map(c => c.id) || [])
         
-        const foundCandidate = foundJob.candidates?.find(c => c.id === candidateId)
-        console.log('🔍 Found candidate:', foundCandidate ? foundCandidate.name : 'NOT FOUND')
         if (foundCandidate) {
           console.log('✅ Candidate set successfully:', foundCandidate.name)
           setCandidate(foundCandidate)
@@ -107,15 +159,15 @@ export default function InterviewPage() {
           }
         } else {
           console.error('❌ Candidate not found! CandidateID:', candidateId)
-          console.error('❌ This might be a timing issue. Please try refreshing the page.')
+          setLoadingError(`Candidate not found. This might be a timing issue. Please try refreshing the page or contact support.`)
         }
       } else {
         console.error('❌ Job not found! JobID:', jobId)
-        console.error('❌ This might be a data issue. Please check the interview link.')
+        setLoadingError(`Job not found. Please check the interview link or contact support.`)
       }
-    } else {
-      console.error('❌ No saved jobs found in localStorage')
     }
+    
+    loadInterviewData()
     
     // Cleanup function
     return () => {
@@ -541,7 +593,12 @@ export default function InterviewPage() {
       console.log('Submitting video data:', videoResponses)
 
       // Save to localStorage by updating the candidate
-      const savedJobs = localStorage.getItem('jobScorecards')
+      // Determine correct storage key based on job status (not ID prefix)
+      const isDraft = job.isDraft === true
+      const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
+      console.log('🔍 Using storage key:', storageKey, 'for job:', job.id, 'isDraft:', isDraft)
+      
+      const savedJobs = localStorage.getItem(storageKey)
       console.log('🔍 savedJobs found:', !!savedJobs)
       
       if (savedJobs) {
@@ -582,9 +639,10 @@ export default function InterviewPage() {
                 candidateName: candidate?.name,
                 candidateId: candidate?.id,
                 totalJobsCount: jobs.length,
-                totalCandidatesInJob: jobs[jobIndex].candidates?.length
+                totalCandidatesInJob: jobs[jobIndex].candidates?.length,
+                storageKey: storageKey
               })
-              localStorage.setItem('jobScorecards', JSON.stringify(jobs))
+              localStorage.setItem(storageKey, JSON.stringify(jobs))
               console.log('✅ Interview completed successfully for candidate:', candidate?.name, '- Previous responses replaced')
               console.log('🔍 Candidate data saved:', {
                 name: jobs[jobIndex].candidates[candidateIndex].name,
@@ -620,7 +678,7 @@ export default function InterviewPage() {
           } else {
             // Try to reload data from localStorage and try again
             console.log('🔍 Candidate not found, reloading localStorage data...')
-            const freshJobs = localStorage.getItem('jobScorecards')
+            const freshJobs = localStorage.getItem(storageKey)
             if (freshJobs) {
               const freshJobsData = JSON.parse(freshJobs)
               console.log('🔍 Fresh data - total jobs:', freshJobsData.length)
@@ -645,7 +703,7 @@ export default function InterviewPage() {
                       delete jobs[jobIndex].candidates[retryIndex].previousInterviewSessions
                     }
                     
-                    localStorage.setItem('jobScorecards', JSON.stringify(jobs))
+                    localStorage.setItem(storageKey, JSON.stringify(jobs))
                     console.log('✅ Interview saved successfully after retry')
                     
                     // Sync to server

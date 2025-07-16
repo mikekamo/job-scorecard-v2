@@ -31,7 +31,7 @@ export default function CandidatesPage() {
 
   // Load data
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
         // Load current company
         const savedCompanies = localStorage.getItem('scorecard-companies')
@@ -42,13 +42,64 @@ export default function CandidatesPage() {
           const currentComp = companies.find(c => c.id === savedCurrentCompany)
           setCurrentCompany(currentComp)
           
-          // Load jobs for current company
+          // Load jobs for current company from localStorage first
+          let allJobs = []
+          
+          // Check jobScorecards (completed jobs)
           const savedJobs = localStorage.getItem('jobScorecards')
           if (savedJobs) {
-            const allJobs = JSON.parse(savedJobs)
-            const companyJobs = allJobs.filter(job => job.companyId === savedCurrentCompany)
-            setJobs(companyJobs)
+            const jobs = JSON.parse(savedJobs)
+            allJobs = allJobs.concat(jobs)
           }
+          
+          // Check job-drafts (draft jobs)
+          const savedDrafts = localStorage.getItem('job-drafts')
+          if (savedDrafts) {
+            const drafts = JSON.parse(savedDrafts)
+            allJobs = allJobs.concat(drafts)
+          }
+          
+          // If no jobs found in localStorage, try server storage
+          if (allJobs.length === 0) {
+            console.log('🔍 No jobs found in localStorage, checking server storage...')
+            try {
+              const response = await fetch('/api/data')
+              if (response.ok) {
+                const serverJobs = await response.json()
+                console.log('🔍 Server returned', serverJobs.length, 'jobs')
+                allJobs = serverJobs
+                
+                // Sync to localStorage for future use
+                console.log('🔄 Syncing server data to localStorage...')
+                const completedJobs = serverJobs.filter(job => !job.isDraft)
+                const draftJobs = serverJobs.filter(job => job.isDraft)
+                
+                if (completedJobs.length > 0) {
+                  localStorage.setItem('jobScorecards', JSON.stringify(completedJobs))
+                }
+                if (draftJobs.length > 0) {
+                  localStorage.setItem('job-drafts', JSON.stringify(draftJobs))
+                }
+                console.log('✅ Server data synced to localStorage')
+              } else {
+                console.error('❌ Failed to fetch server data:', response.status)
+              }
+            } catch (serverError) {
+              console.error('❌ Error fetching from server:', serverError)
+            }
+          }
+          
+          // Filter jobs for current company
+          const companyJobs = allJobs.filter(job => job.companyId === savedCurrentCompany)
+          console.log('🔍 Found', companyJobs.length, 'jobs for company:', currentComp?.name)
+          
+          // Log candidate counts for debugging
+          companyJobs.forEach(job => {
+            const candidateCount = job.candidates?.length || 0
+            console.log(`📊 Job "${job.title}" has ${candidateCount} candidates`)
+          })
+          
+          setJobs(companyJobs)
         }
       } catch (error) {
         console.error('Error loading data:', error)

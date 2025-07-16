@@ -11,63 +11,97 @@ export default function GenericInterviewPage() {
   const [company, setCompany] = useState(null)
   const [candidateData, setCandidateData] = useState({ name: '', email: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load job data
-    const jobId = params.jobId;
-    let foundJob = null;
+    const loadJobData = async () => {
+      const jobId = params.jobId;
+      let foundJob = null;
 
-    console.log('Attempting to load job with ID:', jobId);
+      console.log('Attempting to load job with ID:', jobId);
 
-    try {
-      // Check completed jobs first
-      const savedJobs = localStorage.getItem('jobScorecards');
-      console.log('savedJobs from jobScorecards:', savedJobs);
-      if (savedJobs) {
-        const jobs = JSON.parse(savedJobs);
-        console.log('Parsed jobs from jobScorecards:', jobs);
-        foundJob = jobs.find(j => j.id === jobId);
-        console.log('Found in jobScorecards:', foundJob);
-      }
-
-      // If not found in completed, check drafts
-      if (!foundJob) {
-        const savedDrafts = localStorage.getItem('job-drafts');
-        console.log('savedDrafts from job-drafts:', savedDrafts);
-        if (savedDrafts) {
-          const drafts = JSON.parse(savedDrafts);
-          console.log('Parsed drafts from job-drafts:', drafts);
-          foundJob = drafts.find(j => j.id === jobId);
-          console.log('Found in job-drafts:', foundJob);
+      try {
+        // First check localStorage
+        const savedJobs = localStorage.getItem('jobScorecards');
+        console.log('savedJobs from jobScorecards:', savedJobs);
+        if (savedJobs) {
+          const jobs = JSON.parse(savedJobs);
+          console.log('Parsed jobs from jobScorecards:', jobs);
+          foundJob = jobs.find(j => j.id === jobId);
+          console.log('Found in jobScorecards:', foundJob);
         }
-      }
 
-      if (foundJob) {
-        console.log('Setting job:', foundJob);
-        setJob(foundJob);
-        
-        // Load company information
-        const savedCompanies = localStorage.getItem('scorecard-companies');
-        if (savedCompanies) {
-          const companies = JSON.parse(savedCompanies);
-          const foundCompany = companies.find(c => c.id === foundJob.companyId);
-          if (foundCompany) {
-            setCompany(foundCompany);
+        // If not found in completed, check drafts
+        if (!foundJob) {
+          const savedDrafts = localStorage.getItem('job-drafts');
+          console.log('savedDrafts from job-drafts:', savedDrafts);
+          if (savedDrafts) {
+            const drafts = JSON.parse(savedDrafts);
+            console.log('Parsed drafts from job-drafts:', drafts);
+            foundJob = drafts.find(j => j.id === jobId);
+            console.log('Found in job-drafts:', foundJob);
           }
         }
-        
-        // Check if job has interview questions
-        if (!foundJob.interviewQuestions || foundJob.interviewQuestions.length === 0) {
-          alert('This interview link is not configured with questions. Please contact the hiring team.');
-          return;
+
+        // If still not found, check server storage
+        if (!foundJob) {
+          console.log('🔍 Job not found in localStorage, checking server storage...');
+          try {
+            const response = await fetch('/api/data');
+            if (response.ok) {
+              const serverJobs = await response.json();
+              console.log('🔍 Server returned', serverJobs.length, 'jobs');
+              foundJob = serverJobs.find(j => j.id === jobId);
+              console.log('🔍 Found in server storage:', foundJob ? foundJob.title : 'NOT FOUND');
+              
+              // If found on server, sync to localStorage for future use
+              if (foundJob) {
+                console.log('🔄 Syncing server data to localStorage...');
+                const existingJobs = JSON.parse(localStorage.getItem('jobScorecards') || '[]');
+                const updatedJobs = [...existingJobs, foundJob];
+                localStorage.setItem('jobScorecards', JSON.stringify(updatedJobs));
+                console.log('✅ Server data synced to localStorage');
+              }
+            } else {
+              console.error('❌ Failed to fetch server data:', response.status);
+            }
+          } catch (serverError) {
+            console.error('❌ Error fetching from server:', serverError);
+          }
         }
-      } else {
-        alert('Interview not found. Please check the link or contact the hiring team.');
+
+        if (foundJob) {
+          console.log('Setting job:', foundJob);
+          setJob(foundJob);
+          
+          // Load company information
+          const savedCompanies = localStorage.getItem('scorecard-companies');
+          if (savedCompanies) {
+            const companies = JSON.parse(savedCompanies);
+            const foundCompany = companies.find(c => c.id === foundJob.companyId);
+            if (foundCompany) {
+              setCompany(foundCompany);
+            }
+          }
+          
+          // Check if job has interview questions
+          if (!foundJob.interviewQuestions || foundJob.interviewQuestions.length === 0) {
+            alert('This interview link is not configured with questions. Please contact the hiring team.');
+            return;
+          }
+        } else {
+          console.error('❌ Job not found in localStorage or server storage');
+          alert('Interview not found. Please check the link or contact the hiring team.');
+        }
+      } catch (error) {
+        console.error('Error loading job:', error);
+        alert('Error loading interview data. Please try again or contact support.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading job from localStorage:', error);
-      alert('Error loading interview data. Please try again or contact support.');
-    }
+    };
+
+    loadJobData();
   }, [params.jobId])
 
   const handleSubmit = async (e) => {
@@ -94,40 +128,75 @@ export default function GenericInterviewPage() {
       console.log('🔍 Creating new candidate:', newCandidate)
 
       // Add candidate to job (check both storage locations)
-      const isDraft = job.id.startsWith('draft-')
+      const isDraft = job.isDraft === true
       const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
+      
+      let jobs = []
       const savedJobs = localStorage.getItem(storageKey)
       
       if (savedJobs) {
-        const jobs = JSON.parse(savedJobs)
-        console.log('🔍 Total jobs before adding candidate:', jobs.length)
-        
-        const jobIndex = jobs.findIndex(j => j.id === job.id)
-        console.log('🔍 Job found at index:', jobIndex)
-        console.log('🔍 Looking for job ID:', job.id)
-        console.log('🔍 Available job IDs:', jobs.map(j => j.id))
-        
-        if (jobIndex !== -1) {
-          if (!jobs[jobIndex].candidates) {
-            jobs[jobIndex].candidates = []
+        jobs = JSON.parse(savedJobs)
+      } else {
+        // If localStorage is empty, fetch from server
+        try {
+          const response = await fetch('/api/data')
+          if (response.ok) {
+            jobs = await response.json()
+            // Save to localStorage for future use
+            localStorage.setItem(storageKey, JSON.stringify(jobs))
           }
-          jobs[jobIndex].candidates.push(newCandidate)
-          console.log('🔍 Added candidate to job, total candidates now:', jobs[jobIndex].candidates.length)
-          console.log('🔍 Candidate saved with ID:', newCandidate.id)
-          
-          localStorage.setItem(storageKey, JSON.stringify(jobs))
-          console.log('🔍 Saved to localStorage key:', storageKey)
-
-          // Generate interview ID and redirect to normal interview flow
-          const interviewId = `${job.id}-${newCandidate.id}-${Date.now()}`
-          console.log('🔍 Generated interview ID:', interviewId)
-          console.log('🔍 Redirecting to interview...')
-          
-          // Add a small delay to ensure localStorage is properly saved
-          setTimeout(() => {
-            router.push(`/interview/${interviewId}`)
-          }, 100)
+        } catch (error) {
+          console.error('Error fetching server data:', error)
         }
+      }
+      
+      console.log('🔍 Total jobs before adding candidate:', jobs.length)
+      
+      const jobIndex = jobs.findIndex(j => j.id === job.id)
+      console.log('🔍 Job found at index:', jobIndex)
+      console.log('🔍 Looking for job ID:', job.id)
+      console.log('🔍 Available job IDs:', jobs.map(j => j.id))
+      
+      if (jobIndex !== -1) {
+        if (!jobs[jobIndex].candidates) {
+          jobs[jobIndex].candidates = []
+        }
+        jobs[jobIndex].candidates.push(newCandidate)
+        console.log('🔍 Added candidate to job, total candidates now:', jobs[jobIndex].candidates.length)
+        console.log('🔍 Candidate saved with ID:', newCandidate.id)
+        
+        // Save to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(jobs))
+        console.log('🔍 Saved to localStorage key:', storageKey)
+        
+        // Also save to server
+        try {
+          const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(jobs)
+          })
+          if (response.ok) {
+            console.log('✅ Data synced to server successfully')
+          } else {
+            console.warn('⚠️ Server sync failed, but localStorage saved successfully')
+          }
+        } catch (syncError) {
+          console.warn('⚠️ Server sync failed, but localStorage saved successfully:', syncError)
+        }
+
+        // Generate interview ID and redirect to normal interview flow
+        const interviewId = `${job.id}-${newCandidate.id}-${Date.now()}`
+        console.log('🔍 Generated interview ID:', interviewId)
+        console.log('🔍 Redirecting to interview...')
+        
+        // Add a small delay to ensure data is properly saved
+        setTimeout(() => {
+          router.push(`/interview/${interviewId}`)
+        }, 100)
+      } else {
+        console.error('❌ Job not found in jobs array')
+        alert('Unable to find the job. Please try again.')
       }
     } catch (error) {
       console.error('Error creating candidate:', error)
@@ -137,12 +206,24 @@ export default function GenericInterviewPage() {
     }
   }
 
-  if (!job) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Interview...</h2>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Interview Not Found</h2>
+          <p className="text-gray-600 mb-4">The interview link appears to be invalid or expired.</p>
+          <p className="text-gray-600">Please check the link or contact the hiring team.</p>
         </div>
       </div>
     )

@@ -218,6 +218,53 @@ export function useJobStorage() {
     return false
   }, [saveData])
 
+  // Update a single job
+  const updateJob = useCallback(async (updatedJob) => {
+    console.log('🔄 Updating job:', updatedJob.id)
+    
+    // Determine storage location based on job type
+    const isDraft = updatedJob.isDraft === true
+    const storageKey = isDraft ? 'job-drafts' : 'jobScorecards'
+    
+    try {
+      // Get current jobs from the appropriate storage
+      const currentJobs = localStorage.getItem(storageKey)
+      let jobsArray = currentJobs ? JSON.parse(currentJobs) : []
+      
+      // Update the job in the array
+      const jobIndex = jobsArray.findIndex(job => job.id === updatedJob.id)
+      if (jobIndex !== -1) {
+        jobsArray[jobIndex] = {
+          ...updatedJob,
+          lastModified: new Date().toISOString()
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(jobsArray))
+        
+        // Also save to server
+        await saveData(jobsArray)
+        
+        // Update local state
+        setJobs(prevJobs => {
+          const newJobs = [...prevJobs]
+          const stateIndex = newJobs.findIndex(job => job.id === updatedJob.id)
+          if (stateIndex !== -1) {
+            newJobs[stateIndex] = jobsArray[jobIndex]
+          }
+          return newJobs
+        })
+        
+        console.log('✅ Job updated successfully')
+      } else {
+        console.warn('⚠️ Job not found for update:', updatedJob.id)
+      }
+    } catch (error) {
+      console.error('❌ Failed to update job:', error)
+      throw error
+    }
+  }, [saveData, setJobs])
+
   return {
     jobs,
     isLoading,
@@ -226,6 +273,7 @@ export function useJobStorage() {
     exportData,
     uploadData,
     syncToServer,
+    updateJob,
     reloadData: loadData
   }
 } 
